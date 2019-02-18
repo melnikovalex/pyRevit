@@ -48,9 +48,9 @@ description = 'Alternative command execution engine.'
 [engines.CPY372]
 kernel = 'CPython'
 version = 372
-runtime = false
+runtime = true
 path = 'bin\engines\372'
-assembly = 'Python.Runtime.dll'
+assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
