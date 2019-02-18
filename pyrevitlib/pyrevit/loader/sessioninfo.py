@@ -46,7 +46,7 @@ def setup_runtime_vars():
                                     HOST_APP.subversion)
     else:
         envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR,
-                                    HOST_APP.version_name)
+                                    HOST_APP.version)
 
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
