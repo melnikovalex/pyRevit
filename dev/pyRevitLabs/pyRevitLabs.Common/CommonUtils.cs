@@ -105,10 +105,30 @@ namespace pyRevitLabs.Common {
             return true;
         }
 
+        public static WebClient GetWebClient() {
+            if (CheckInternetConnection()) {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                return new WebClient();
+            }
+            else
+                throw new pyRevitNoInternetConnectionException();
+        }
+
+        public static HttpWebRequest GetHttpWebRequest(string url) {
+            if (CheckInternetConnection()) {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.UserAgent = "pyrevit-cli";
+                return request;
+            }
+            else
+                throw new pyRevitNoInternetConnectionException();
+        }
+
         public static string DownloadFile(string url, string destPath) {
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                using (var client = new WebClient()) {
+                using (var client = GetWebClient()) {
                     client.DownloadFile(url, destPath);
                 }
             }
@@ -163,8 +183,7 @@ namespace pyRevitLabs.Common {
 
         public static bool VerifyUrl(string url) {
             if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest request = GetHttpWebRequest(url);
                 try {
                     var response = request.GetResponse();
                 }

@@ -55,7 +55,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             if (IsRepoDeploy)
                 return string.Format(
                     "{0} | Branch: \"{1}\" | Version: \"{2}\" | Path: \"{3}\"",
-                    Name, Branch, string.Format("{0}:{1}", ModuleVersion, Commit), ClonePath);
+                    Name, Branch, string.Format("{0}:{1}", ModuleVersion, ShortCommit), ClonePath);
             else {
                 return string.Format(
                     "{0} | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
@@ -100,6 +100,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string Tag => GetTag(ClonePath);
 
         public string Commit => GetCommit(ClonePath);
+
+        public string ShortCommit => Commit.GetShortCommit();
 
         public string Origin => GetOrigin(ClonePath);
 

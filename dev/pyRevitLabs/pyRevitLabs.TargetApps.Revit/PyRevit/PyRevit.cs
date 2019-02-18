@@ -152,7 +152,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                                              string archivePath = null,
                                              string destPath = null) {
             string repoBranch = branchName != null ? branchName : PyRevitConsts.OriginalRepoDefaultBranch;
-            string archiveSource = archivePath != null ? archivePath : PyRevitConsts.GetZipPackageUrl(repoBranch);
+            string archiveSource = archivePath != null ? archivePath : PyRevitConsts.GetBranchArchiveUrl(repoBranch);
             string archiveFilePath = null;
 
             // verify archive is zip
@@ -175,7 +175,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             // decide to download if source is a url
             if (archiveSource.IsValidHttpUrl()) {
                 try {
-                    var pkgUrl = PyRevitConsts.GetZipPackageUrl(repoBranch);
+                    var pkgUrl = PyRevitConsts.GetBranchArchiveUrl(repoBranch);
                     var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
                                                Path.GetFileName(archiveSource));
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", pkgUrl, pkgDest);

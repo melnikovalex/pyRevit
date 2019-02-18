@@ -95,6 +95,10 @@ namespace pyRevitLabs.Common.Extensions {
                                .Replace(Path.DirectorySeparatorChar.ToString(), separator);
         }
 
+        public static string GetShortCommit(this string commitHash) {
+            return commitHash.Substring(0, 7);
+        }
+
         public static string TripleDot(this string sourceString, uint maxLength) {
             if (sourceString.Length > maxLength && maxLength > 3)
                 return sourceString.Substring(0, (int)maxLength - 3) + "...";
@@ -146,6 +150,18 @@ namespace pyRevitLabs.Common.Extensions {
             Uri uriResult;
             return Uri.TryCreate(sourceString, UriKind.Absolute, out uriResult)
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        }
+
+        public static List<string> GetLines(this string sourceString) {
+            return new List<string>(sourceString.Split(Environment.NewLine.ToCharArray()));
+        }
+        
+        public static string Indent(this string sourceString, int indentLevel) {
+            var indentedString = string.Empty;
+            foreach (var line in sourceString.GetLines())
+                if (line != string.Empty)
+                    indentedString += '\t' + line + '\n';
+            return indentedString;
         }
 
         /// <summary>

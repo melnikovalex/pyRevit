@@ -142,8 +142,12 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string BundleNoButtonPostfix = ".nobutton";
 
         // methods
-        public static string GetZipPackageUrl(string branchName) {
+        public static string GetBranchArchiveUrl(string branchName) {
             return string.Format(OriginalZipPath, branchName);
+        }
+
+        public static string GetTagArchiveUrl(string tagName) {
+            return string.Format(OriginalZipPath, tagName);
         }
 
         public static string GetZipPackageInternalBranchPath(string branchName) {
