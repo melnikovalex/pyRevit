@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -194,8 +195,15 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         public static PyRevitEngine GetEngine(string clonePath, int engineVer = 000) {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-            var enginesDir = FindEnginesDirectory(clonePath);
-            return FindEngine(enginesDir, engineVer: engineVer);
+            
+            // find latest
+            if (engineVer == 000) {
+                return GetEngines(clonePath).OrderByDescending(x => x.Version).First();
+            }
+            // or specified
+            else {
+                return GetEngines(clonePath).Where(x => x.Version == engineVer).First();
+            }
         }
 
         // get all engines from clone path
