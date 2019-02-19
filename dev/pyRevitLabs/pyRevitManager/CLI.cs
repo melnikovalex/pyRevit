@@ -140,7 +140,49 @@ namespace pyRevitManager.Views {
         --debug                     Print docopt options and logger debug messages
 ";
 
-        public static string FullHelp => helpTitle + helpUsage + helpOptions;
+        //public static string FullHelp => helpTitle + helpUsage + helpOptions;
+
+        public static string FullHelp = @"Usage: pyrevit [OPTIONS] COMMAND
+
+pyRevit environment and clones manager
+
+Options:
+    -h --help                   Show this screen
+    -V --version                Show version
+    --verbose                   Print info messages
+    --debug                     Print docopt options and logger debug messages
+
+Management Commands:
+    env             Print environment information
+    releases        Info about pyRevit releases
+    clones          Manage pyRevit clones
+    extensions      Manage pyRevit extensions
+    configs         Manage pyRevit configurations
+    attached        Manage pyRevit attachments to installed Revit
+    caches          Manage pyRevit caches
+    revits          Manage installed Revits
+    cli             Manage this utility
+
+Commands:
+    clone           Create a clone of pyRevit on this machine
+    extend          Create a clone of a third-party pyRevit extension on this machine
+    attach          Attach pyRevit clone to installed Revit
+    switch          Switch active pyRevit clone
+    detach          Detach pyRevit clone from installed Revit
+    config          Configure pyRevit for current user
+    run             Run python script in Revit
+    init            Init pyRevit bundle
+
+Help Commands:
+    help            Open help in default browser
+    blog            Open pyRevit blog
+    docs            Open pyRevit docs
+    source          Open pyRevit source repo
+    youtube         Open pyRevit on YouTube
+    support         Open pyRevit support page
+
+Run 'pyrevit COMMAND --help' for more information on a command.
+";
 
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
