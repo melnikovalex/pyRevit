@@ -351,12 +351,8 @@ namespace pyRevitManager.Views {
                 PyRevitRelease matchedRelease = null;
                 // determine latest release
                 if (arguments["latest"].IsTrue) {
-                    matchedRelease =
-                        PyRevitRelease.GetLatestReleases()
-                                        .Where(r => r.IsPyRevitRelease)
-                                        .OrderByDescending(r => r.Version)
-                                        .ToList()
-                                        .First();
+                    matchedRelease = PyRevitRelease.GetLatestRelease();
+
                     if (matchedRelease == null)
                         throw new pyRevitException("Can not determine latest release.");
                 }
@@ -397,12 +393,7 @@ namespace pyRevitManager.Views {
                 PyRevitRelease matchedRelease = null;
                 // determine latest release
                 if (arguments["latest"].IsTrue) {
-                    matchedRelease =
-                        PyRevitRelease.GetLatestReleases()
-                                        .Where(r => r.IsPyRevitRelease)
-                                        .OrderByDescending(r => r.Version)
-                                        .ToList()
-                                        .First();
+                    matchedRelease = PyRevitRelease.GetLatestRelease();
 
                     if (matchedRelease == null)
                         throw new pyRevitException("Can not determine latest release.");

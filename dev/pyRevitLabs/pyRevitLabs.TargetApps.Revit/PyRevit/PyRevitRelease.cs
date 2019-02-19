@@ -77,6 +77,14 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
+        public static PyRevitRelease GetLatestRelease() {
+            return GetLatestReleases()
+                .Where(r => r.IsPyRevitRelease && !r.PreRelease)
+                .OrderByDescending(r => r.Version)
+                .ToList()
+                .First();
+        }
+
         // Find latest releases
         public static List<PyRevitRelease> GetLatestReleases() {
             // make github api call and get a list of releases
