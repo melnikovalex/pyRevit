@@ -34,14 +34,29 @@ namespace pyRevitLabs.TargetApps.Revit {
         };
 
         // constructors
-        public PyRevitClone(string name, string clonePath) {
-            // TODO: check repo validity?
-            if (!reservedNames.Contains(name)) {
-                Name = name;
-                ClonePath = clonePath.NormalizeAsPath();
+        public PyRevitClone(string clonePath, string name = null) {
+            // clone path could be any path inside the clone
+            // find the clone root first
+            var testPath = clonePath;
+            while (!IsCloneValid(testPath)) {
+                testPath = Path.GetDirectoryName(testPath);
+                if (testPath == null || testPath == string.Empty)
+                    throw new pyRevitException(
+                        string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
+                        );
+            }
+
+            ClonePath = testPath.NormalizeAsPath();
+
+            if (name != null) {
+                if (!reservedNames.Contains(name)) {
+                    Name = name;
+                }
+                else
+                    throw new pyRevitException(string.Format("Name \"{0}\" is reserved.", name));
             }
             else
-                throw new pyRevitException(string.Format("Name \"{0}\" is reserved.", name));
+                Name = string.Format("Unnamed-{0}", ClonePath.GenerateHash().GetHashShort());
         }
 
         // properties
@@ -72,15 +87,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public bool IsValidClone {
-            get {
-                try {
-                    VerifyCloneValidity(ClonePath);
-                    return true;
-                }
-                catch { return false; }
-            }
-        }
+        public bool IsValidClone => IsCloneValid(ClonePath);
 
         public bool HasDeployments {
             get { return VerifyHasDeployments(ClonePath); }
@@ -101,7 +108,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public string Commit => GetCommit(ClonePath);
 
-        public string ShortCommit => Commit.GetShortCommit();
+        public string ShortCommit => Commit.GetHashShort();
 
         public string Origin => GetOrigin(ClonePath);
 
@@ -169,27 +176,49 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // check if path is valid pyrevit clone
         // @handled @logs
-        public static bool VerifyCloneValidity(string clonePath) {
-            var normClonePath = clonePath.NormalizeAsPath();
-            logger.Debug("Checking pyRevit copy validity \"{0}\"", normClonePath);
-            if (CommonUtils.VerifyPath(normClonePath)) {
-                // say yes if under test
-                if (!GlobalConfigs.AllClonesAreValid) {
-                    // determine clone validity based on directory availability
-                    var pyrevitDir = GetPyRevitPath(normClonePath);
-                    if (!CommonUtils.VerifyPath(pyrevitDir)) {
-                        throw new pyRevitInvalidpyRevitCloneException(normClonePath);
-                    }
+        public static void VerifyCloneValidity(string clonePath) {
+            if (clonePath != null && clonePath != string.Empty) {
+                var normClonePath = clonePath.NormalizeAsPath();
+                logger.Debug("Checking pyRevit clone validity \"{0}\"", normClonePath);
+                if (CommonUtils.VerifyPath(normClonePath)) {
+                    // say yes if under test
+                    if (!GlobalConfigs.AllClonesAreValid) {
+                        // determine clone validity based on directory availability
+                        logger.Debug("Checking clone validity by directory structure...");
+                        var pyrevitDir = GetPyRevitPath(normClonePath);
+                        logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
+                        if (!CommonUtils.VerifyPath(pyrevitDir)) {
+                            throw new pyRevitInvalidpyRevitCloneException(normClonePath);
+                        }
 
-                    // if is a repo, and repo is NOT valid, throw an exception
-                    if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
-                        throw new pyRevitInvalidGitCloneException(normClonePath);
+                        // if is a repo, and repo is NOT valid, throw an exception
+                        logger.Debug("Checking clone validity by git repo...");
+                        if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
+                            throw new pyRevitInvalidGitCloneException(normClonePath);
+                    }
+                    logger.Debug("Valid pyRevit clone \"{0}\"", normClonePath);
+                    return;
                 }
-                logger.Debug("Valid pyRevit clone \"{0}\"", normClonePath);
+                throw new pyRevitResourceMissingException(normClonePath);
+            }
+            throw new pyRevitException("Clone path can not be null.");
+        }
+
+        // return true of false for clone validity
+        public static bool IsCloneValid(string clonePath) {
+            try {
+                VerifyCloneValidity(clonePath);
                 return true;
             }
+            catch (Exception ex){
+                logger.Debug("Invalid pyRevit clone. | {0}", ex.Message);
+                return false;
+            }
+        }
 
-            throw new pyRevitResourceMissingException(normClonePath);
+        // get clone from manifest file
+        public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
+            return new PyRevitClone(manifest.Assembly);
         }
 
         // get engine from clone path
@@ -197,7 +226,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         public static PyRevitEngine GetEngine(string clonePath, int engineVer = 000) {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-            
+
             // find latest
             if (engineVer == 000) {
                 return GetEngines(clonePath).OrderByDescending(x => x.Version).First();

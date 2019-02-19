@@ -121,10 +121,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                 // make sure to delete the repo if error occured after cloning
                 var clonedPath = repo.Info.WorkingDirectory;
                 try {
-                    if (PyRevitClone.VerifyCloneValidity(clonedPath)) {
-                        logger.Debug("Clone successful \"{0}\"", clonedPath);
-                        RegisterClone(cloneName, clonedPath);
-                    }
+                    PyRevitClone.VerifyCloneValidity(clonedPath);
+                    logger.Debug("Clone successful \"{0}\"", clonedPath);
+                    RegisterClone(cloneName, clonedPath);
                 }
                 catch (Exception ex) {
                     logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
@@ -270,10 +269,9 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         private static void VerifyAndRegisterClone(string cloneName, string clonePath) {
             try {
-                if (PyRevitClone.VerifyCloneValidity(clonePath)) {
-                    logger.Debug("Clone successful \"{0}\"", clonePath);
-                    RegisterClone(cloneName, clonePath);
-                }
+                PyRevitClone.VerifyCloneValidity(clonePath);
+                logger.Debug("Clone successful \"{0}\"", clonePath);
+                RegisterClone(cloneName, clonePath);
             }
             catch (Exception ex) {
                 logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
@@ -507,11 +505,6 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public static RevitAddonManifest GetAttachedManifest(int revitYear, bool allUsers) {
-            logger.Debug("Querying clone attached to Revit {0} {1}", revitYear, allUsers ? "(All Users)" : "(Current User)");
-            return Addons.GetManifest(revitYear, PyRevitConsts.AddinName, allUsers: allUsers);
-        }
-
         // get all attached revit versions
         // @handled @logs
         public static List<PyRevitAttachment> GetAttachments() {
@@ -519,18 +512,34 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             foreach (var revit in RevitProduct.ListInstalledProducts()) {
                 logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
-                var userManifest = GetAttachedManifest(revit.ProductYear, allUsers: false);
-                var allUsersManifest = GetAttachedManifest(revit.ProductYear, allUsers: true);
+                var userManifest = Addons.GetAttachedManifest(revit.ProductYear, allUsers: false);
+                var allUsersManifest = Addons.GetAttachedManifest(revit.ProductYear, allUsers: true);
+
+                PyRevitAttachment attachment = null;
                 if (allUsersManifest != null) {
                     logger.Debug("pyRevit (All Users) is attached to Revit \"{0}\"", revit.Version);
-                    var attachment = new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
-                    attachments.Add(attachment);
+                    attachment = new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
+                    
                 }
                 else if (userManifest != null) {
                     logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
-                    var attachment = new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
+                    attachment = new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
+                }
+
+                // verify attachment has found
+                if (attachment != null) {
+                    // try to find clone in registered clones
+                    foreach (var clone in GetRegisteredClones()) {
+                        if (attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                            attachment.SetClone(clone);
+                            break;
+                        }
+                    }
+
                     attachments.Add(attachment);
                 }
+                else
+                    logger.Debug("No attachment found for Revit \"{0}\"", revit.Version);
             }
 
             return attachments;
@@ -554,19 +563,20 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static void RegisterClone(string cloneName, string repoPath) {
             var normalPath = repoPath.NormalizeAsPath();
             logger.Debug("Registering clone \"{0}\"", normalPath);
-            if (PyRevitClone.VerifyCloneValidity(repoPath)) {
-                logger.Debug("Clone is valid. Registering \"{0}\"", normalPath);
-                var registeredClones = GetRegisteredClones();
-                var clone = new PyRevitClone(cloneName, repoPath);
-                if (!registeredClones.Contains(clone)) {
-                    registeredClones.Add(new PyRevitClone(cloneName, repoPath));
-                    SaveRegisteredClones(registeredClones);
-                }
-                else
-                    throw new pyRevitException(
-                        string.Format("clone with repo path \"{0}\" already exists.", repoPath)
-                        );
+
+            PyRevitClone.VerifyCloneValidity(repoPath);
+            logger.Debug("Clone is valid. Registering \"{0}\"", normalPath);
+
+            var registeredClones = GetRegisteredClones();
+            var clone = new PyRevitClone(repoPath, name: cloneName);
+            if (!registeredClones.Contains(clone)) {
+                registeredClones.Add(new PyRevitClone(repoPath, name: cloneName));
+                SaveRegisteredClones(registeredClones);
             }
+            else
+                throw new pyRevitException(
+                    string.Format("clone with repo path \"{0}\" already exists.", repoPath)
+                    );
         }
 
         // renames a clone in a configs
@@ -619,7 +629,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // verify all registered clones, protect against tampering
             foreach (var cloneKV in clonesList) {
-                var clone = new PyRevitClone(cloneKV.Key, cloneKV.Value.NormalizeAsPath());
+                var clone = new PyRevitClone(cloneKV.Value.NormalizeAsPath(), name: cloneKV.Key);
                 if (clone.IsValidClone && !validatedClones.Contains(clone)) {
                     logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
                     validatedClones.Add(clone);

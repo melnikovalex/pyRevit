@@ -7,12 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Common.Extensions;
 
+using NLog;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitRelease {
+        // private logger and data
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public override string ToString() {
             return string.Format("{0} | Tag: {1} | Version: {2} | Url: \"{3}\"",
@@ -38,14 +42,12 @@ namespace pyRevitLabs.TargetApps.Revit {
         // Extract version object from tag_name
         public Version Version {
             get {
+                // replace from larger string to smaller
+                var cleanedVersion = tag_name.ToLower().ExtractVersion();
+                logger.Debug("Determined release version as \"{0}\"", cleanedVersion);
                 // Cleanup tag_name first
-                return new Version(
-                    // replace from larger string to smaller
-                    tag_name.ToLower()
-                            .Split('-')[0]
-                            .Replace(PyRevitConsts.CLIReleasePrefix, "")
-                            .Replace(PyRevitConsts.ReleasePrefix, "")
-                            );
+                return cleanedVersion;
+                    
             }
         }
 

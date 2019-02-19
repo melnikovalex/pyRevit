@@ -1998,8 +1998,7 @@ namespace pyRevitManager.Views {
             PrintHeader("Attachments");
             foreach (var attachment in PyRevit.GetAttachments()) {
                 if (attachment.Clone != null && attachment.Engine != null)
-                    Console.WriteLine(string.Format("{0} | Clone: \"{1}\" | Engine: \"{2}\"",
-                                                    attachment.Product.ProductName, attachment.Clone.Name, attachment.Engine.Version));
+                    Console.WriteLine(attachment);
                 else
                     logger.Error(
                         string.Format("pyRevit is attached to Revit {0} but can not determine the clone and engine",
