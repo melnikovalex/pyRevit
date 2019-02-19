@@ -32,6 +32,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string zipball_url { get; set; }
         public string body { get; set; }
         public JArray assets { get; set; }
+        public string created_at { get; set; }
+        public string published_at { get; set; }
 
         // Check whether this is a pyRevit release
         public bool IsPyRevitRelease { get { return !tag_name.Contains(PyRevitConsts.CLIReleasePrefix); } }
@@ -56,6 +58,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string Tag => tag_name;
         public string ReleaseNotes => body.Trim();
         public bool PreRelease => prerelease;
+        public string CreatedTimeStamp => created_at;
+        public string PublishedTimeStamp => published_at;
 
         // Extract archive download url from zipball_url
         public string ArchiveUrl {
@@ -86,7 +90,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 releases = JsonConvert.DeserializeObject<IList<PyRevitRelease>>(reader.ReadToEnd());
             }
 
-            return releases.ToList();
+            return releases.OrderByDescending(r => r.CreatedTimeStamp).ToList();
         }
 
         // find latest release version

@@ -45,6 +45,7 @@ namespace pyRevitManager.Views {
         pyrevit (-h | --help)
         pyrevit (-V | --version)
         pyrevit (blog | docs | source | youtube | support) [--help]
+        pyrevit releases --help
         pyrevit releases [--notes]
         pyrevit releases <search_pattern> [--notes]
         pyrevit releases open latest
@@ -316,10 +317,15 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
+            // $ pyrevit releases --help
             // $ pyrevit releases [--notes]
             // $ pyrevit releases <search_pattern> [--notes]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "releases")) {
+
+                if (arguments["--help"].IsTrue)
+                    PrintSubHelpAndExit(new List<string>() { "releases" }, "Info on pyRevit Releases");
+
                 bool printReleaseNotes = arguments["--notes"].IsTrue;
                 string searchPattern = TryGetValue(arguments, "<search_pattern>");
 
