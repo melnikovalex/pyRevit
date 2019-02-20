@@ -80,7 +80,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string AddinId = "B39107C3-A1D7-47F4-A5A1-532DDF6EDB5D";
         public const string AddinClassName = "PyRevitLoader.PyRevitLoaderApplication";
         public const string VendorId = "eirannejad";
-        public const string DllName = "pyRevitLoader.dll";
+        public const string LegacyEngineDllName = "pyRevitLoader.dll";
         public const int ConfigsDynamoCompatibleEnginerVer = 273;
 
         // consts for recording pyrevit.exe config in the pyRevit configuration file

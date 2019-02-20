@@ -120,9 +120,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 return revitManifest;
                         }
                         catch (Exception ex) {
-                            logger.Debug(string.Format("Error reading Revit \"{0}\" manifest file for \"{1}\" | {2}",
+                            logger.Debug(string.Format("Not pyRevit \"{0}\" manifest file \"{1}\" | {2}",
                                     revitYear,
-                                    addinName,
+                                    file,
                                     ex.Message)
                                 );
                         }

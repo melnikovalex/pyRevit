@@ -268,9 +268,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                     engines.Add(
                         new PyRevitEngine(
                             engineVer: infoTable["version"].Get<int>(),
-                            runtime: infoTable["runtime"].Get<bool>(),
+                            runtime: infoTable.TryGetValue("runtime") != null ? infoTable["runtime"].Get<bool>() : true, // be flexible since its a new feature
                             enginePath: Path.Combine(clonePath, infoTable["path"].Get<string>()),
-                            assemblyName: infoTable["assembly"].Get<string>(),
+                            assemblyName: infoTable.TryGetValue("assembly") != null? infoTable["assembly"].Get<string>() : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
                             kernelName: infoTable["kernel"].Get<string>(),
                             engineDescription: infoTable["description"].Get<string>(),
                             compatibleProducts: new List<string>(((TomlArray)infoTable["compatproducts"]).To<string>())
