@@ -17,6 +17,8 @@ using DocoptNet;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 using Console = Colorful.Console;
 
@@ -53,7 +55,7 @@ namespace pyRevitManager.Views {
         pyrevit releases open <search_pattern>
         pyrevit releases download (installer | archive) latest --dest=<dest_path> [--pre]
         pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
-        pyrevit env [--help] [--log=<log_file>]
+        pyrevit env [--json] [--help] [--log=<log_file>]
         pyrevit clone --help
         pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--source=<archive_url>] [--branch=<branch_name>] [--log=<log_file>]
         pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
@@ -184,7 +186,6 @@ Help Commands:
 
 Run 'pyrevit COMMAND --help' for more information on a command.
 ";
-
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
         public static void ProcessArguments(string[] args) {
@@ -499,7 +500,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             }
 
             // =======================================================================================================
-            // $ pyrevit env
+            // $ pyrevit env [--json] [--help] [--log=<log_file>]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "env")) {
 
@@ -510,17 +511,70 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                         "  - attachments\n" +
                                         "  - extensions and paths\n" +
                                         "  - installed and running revits\n" +
-                                        "  - user environment info\n"
+                                        "  - user environment info\n" +
+                                        "\n" +
+                                        "  Use --json switch to format the data in json." 
                                         );
 
-                PrintClones();
-                PrintAttachments();
-                PrintExtensions();
-                PrintExtensionSearchPaths();
-                PrintExtensionLookupSources();
-                PrintInstalledRevits();
-                PrintRunningRevits();
-                PrinUserEnv();
+                if (arguments["--json"].IsTrue) {
+
+                    // collecet search paths
+                    var searchPaths = new List<string>() { PyRevit.pyRevitDefaultExtensionsPath };
+                    searchPaths.AddRange(PyRevit.GetRegisteredExtensionSearchPaths());
+
+                    // collect list of lookup sources
+                    var lookupSrc = new List<string>() { PyRevit.GetDefaultExtensionLookupSource() };
+                    lookupSrc.AddRange(PyRevit.GetRegisteredExtensionLookupSources());
+
+                    // create json data object
+                    var jsonData = new Dictionary<string, object>() {
+                        { "meta", new Dictionary<string, object>() {
+                                { "version", "0.1.0"}
+                            }
+                        },
+                        { "clones", PyRevit.GetRegisteredClones() },
+                        { "attachments", PyRevit.GetAttachments() },
+                        { "extensions", PyRevit.GetInstalledExtensions() },
+                        { "searchPaths", searchPaths },
+                        { "lookupSources", lookupSrc },
+                        { "installed", RevitProduct.ListInstalledProducts() },
+                        { "running", RevitController.ListRunningRevits() },
+                        { "pyrevitDataDir", PyRevit.pyRevitAppDataPath },
+                        { "userEnv", new Dictionary<string, object>() {
+                                { "osVersion", UserEnv.GetWindowsVersion() },
+                                { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
+                                { "activeUser", UserEnv.GetLoggedInUserName() },
+                                { "isAdmin", UserEnv.IsRunAsAdmin() },
+                                { "userAppdata", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) },
+                                { "latesFramework", UserEnv.GetInstalledDotNetVersion() },
+                                { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
+                                { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
+                                { "cliVersion", CLIVersion },
+                            }
+                        },
+                    };
+
+                    Console.WriteLine(
+                        JsonConvert.SerializeObject(
+                            jsonData,
+                            new JsonSerializerSettings {
+                                Error = delegate (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) {
+                                    args.ErrorContext.Handled = true;
+                                },
+                                ContractResolver = new CamelCasePropertyNamesContractResolver()
+                            })
+                        );
+                }
+                else {
+                    PrintClones();
+                    PrintAttachments();
+                    PrintExtensions();
+                    PrintExtensionSearchPaths();
+                    PrintExtensionLookupSources();
+                    PrintInstalledRevits();
+                    PrintRunningRevits();
+                    PrinUserEnv();
+                }
             }
 
             // =======================================================================================================
@@ -2149,8 +2203,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 Console.WriteLine("No .Ne-Core Target Packs are installed.");
             }
 
-            Console.WriteLine(string.Format("pyRevit CLI {0}",
-                                            Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+            Console.WriteLine(string.Format("pyRevit CLI {0}", CLIVersion.ToString()));
         }
     }
 }
