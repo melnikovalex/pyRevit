@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -2046,7 +2046,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
         private static void PrintClones() {
             PrintHeader("Registered Clones (full git repos)");
-            var clones = PyRevit.GetRegisteredClones();
+            var clones = PyRevit.GetRegisteredClones().OrderBy(x => x.Name);
             foreach (var clone in clones.Where(c => c.IsRepoDeploy))
                 Console.WriteLine(clone);
 
@@ -2057,7 +2057,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
         private static void PrintAttachments() {
             PrintHeader("Attachments");
-            foreach (var attachment in PyRevit.GetAttachments()) {
+            foreach (var attachment in PyRevit.GetAttachments().OrderByDescending(x => x.Product.Version)) {
                 if (attachment.Clone != null && attachment.Engine != null)
                     Console.WriteLine(attachment);
                 else
@@ -2074,7 +2074,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 extList = PyRevit.GetInstalledExtensions();
 
             PrintHeader(string.Format("{0} Extensions", headerPrefix));
-            foreach (PyRevitExtension ext in extList)
+            foreach (PyRevitExtension ext in extList.OrderBy(x => x.Name))
                 Console.WriteLine(ext);
         }
 
@@ -2103,13 +2103,13 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
         private static void PrintInstalledRevits() {
             PrintHeader("Installed Revits");
-            foreach (var revit in RevitProduct.ListInstalledProducts())
+            foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version))
                 Console.WriteLine(revit);
         }
 
         private static void PrintRunningRevits() {
             PrintHeader("Running Revit Instances");
-            foreach (var revit in RevitController.ListRunningRevits())
+            foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version))
                 Console.WriteLine(revit);
         }
 
