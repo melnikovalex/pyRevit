@@ -77,12 +77,13 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public static PyRevitRelease GetLatestRelease() {
-            return GetLatestReleases()
-                .Where(r => r.IsPyRevitRelease && !r.PreRelease)
-                .OrderByDescending(r => r.Version)
-                .ToList()
-                .First();
+        public static PyRevitRelease GetLatestRelease(bool includePreRelease = false) {
+            if (includePreRelease)
+                return GetLatestReleases().Where(r => r.IsPyRevitRelease)
+                                          .OrderByDescending(r => r.Version).ToList().First();
+            else
+                return GetLatestReleases().Where(r => r.IsPyRevitRelease && !r.PreRelease)
+                                          .OrderByDescending(r => r.Version).ToList().First();
         }
 
         // Find latest releases

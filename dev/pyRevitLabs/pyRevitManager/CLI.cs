@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,10 +47,11 @@ namespace pyRevitManager.Views {
         pyrevit (blog | docs | source | youtube | support) [--help]
         pyrevit releases --help
         pyrevit releases [--notes]
+        pyrevit releases latest [--pre] [--notes]
         pyrevit releases <search_pattern> [--notes]
-        pyrevit releases open latest
+        pyrevit releases open latest [--pre]
         pyrevit releases open <search_pattern>
-        pyrevit releases download (installer | archive) latest --dest=<dest_path>
+        pyrevit releases download (installer | archive) latest --dest=<dest_path> [--pre]
         pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
         pyrevit env [--help] [--log=<log_file>]
         pyrevit clone --help
@@ -361,21 +362,37 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // =======================================================================================================
             // $ pyrevit releases --help
             // $ pyrevit releases [--notes]
+            // $ pyrevit releases latest [--pre] [--notes]
             // $ pyrevit releases <search_pattern> [--notes]
             // =======================================================================================================
-            else if (VerifyCommand(activeKeys, "releases")) {
+            else if (VerifyCommand(activeKeys, "releases")
+                        || VerifyCommand(activeKeys, "releases", "latest")) {
 
                 if (arguments["--help"].IsTrue)
                     PrintSubHelpAndExit(new List<string>() { "releases" }, "Info on pyRevit Releases");
 
                 bool printReleaseNotes = arguments["--notes"].IsTrue;
-                string searchPattern = TryGetValue(arguments, "<search_pattern>");
+                bool listPreReleases = arguments["--pre"].IsTrue;
 
-                List<PyRevitRelease> releasesToList;
-                if (searchPattern != null)
-                    releasesToList = PyRevitRelease.GetLatestReleases().Where(r => r.IsPyRevitRelease && (r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern))).ToList();
-                else
-                    releasesToList = PyRevitRelease.GetLatestReleases().Where(r => r.IsPyRevitRelease).ToList();
+                List<PyRevitRelease> releasesToList = new List<PyRevitRelease>();
+
+                // determine latest release
+                if (arguments["latest"].IsTrue) {
+                    var latest = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
+
+                    if (latest == null)
+                        throw new pyRevitException("Can not determine latest release.");
+
+                    releasesToList.Add(latest);
+                }
+                else {
+                    string searchPattern = TryGetValue(arguments, "<search_pattern>");
+
+                    if (searchPattern != null)
+                        releasesToList = PyRevitRelease.GetLatestReleases().Where(r => r.IsPyRevitRelease && (r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern))).ToList();
+                    else
+                        releasesToList = PyRevitRelease.GetLatestReleases().Where(r => r.IsPyRevitRelease).ToList();
+                }
 
                 foreach (var prelease in releasesToList) {
                     Console.WriteLine(prelease);
@@ -385,15 +402,18 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             }
 
             // =======================================================================================================
-            // $ pyrevit releases open latest
+            // $ pyrevit releases open latest [--pre]
             // $ pyrevit releases open <search_pattern>
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "releases", "open")
                         || VerifyCommand(activeKeys, "releases", "open", "latest")) {
+
+                bool listPreReleases = arguments["--pre"].IsTrue;
+
                 PyRevitRelease matchedRelease = null;
                 // determine latest release
                 if (arguments["latest"].IsTrue) {
-                    matchedRelease = PyRevitRelease.GetLatestRelease();
+                    matchedRelease = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
 
                     if (matchedRelease == null)
                         throw new pyRevitException("Can not determine latest release.");
@@ -419,13 +439,15 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             }
 
             // =======================================================================================================
-            // $ pyrevit releases download (installer|archive) latest --dest=<dest_path>
+            // $ pyrevit releases download (installer|archive) latest --dest=<dest_path> [--pre]
             // $ pyrevit releases download (installer|archive) <search_pattern> --dest=<dest_path>
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "releases", "download", "installer")
                         || VerifyCommand(activeKeys, "releases", "download", "archive")
                         || VerifyCommand(activeKeys, "releases", "download", "installer", "latest")
                         || VerifyCommand(activeKeys, "releases", "download", "archive", "latest")) {
+
+                bool listPreReleases = arguments["--pre"].IsTrue;
 
                 // get dest path
                 string destPath = TryGetValue(arguments, "--dest");
@@ -435,7 +457,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 PyRevitRelease matchedRelease = null;
                 // determine latest release
                 if (arguments["latest"].IsTrue) {
-                    matchedRelease = PyRevitRelease.GetLatestRelease();
+                    matchedRelease = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
 
                     if (matchedRelease == null)
                         throw new pyRevitException("Can not determine latest release.");
