@@ -77,7 +77,7 @@ namespace pyRevitManager.Views {
         pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
         pyrevit attached [<revit_year>] [--help]
         pyrevit switch --help
-        pyrevit switch <clone_name>
+        pyrevit switch <clone_name> 
         pyrevit detach --help
         pyrevit detach (--all | <revit_year>) [--log=<log_file>]
         pyrevit extend --help
@@ -370,7 +370,20 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         || VerifyCommand(activeKeys, "releases", "latest")) {
 
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "releases" }, "Info on pyRevit Releases");
+                    PrintSubHelpAndExit(
+                        new List<string>() { "releases" },
+                        title: "Info on pyRevit Releases",
+                        commands: new Dictionary<string, string>() {
+                                { "open",       "Open release page in default browser." },
+                                { "download",   "Download installer or archive ." }
+                            },
+                        options: new Dictionary<string, string>() {
+                                { "latest",             "Match latest release only." },
+                                { "<search_pattern>",   "Pattern to search releases." },
+                                { "--pre",              "Include pre-releases in the search." },
+                                { "--notes",            "Print release notes." }
+                            }
+                        );
 
                 bool printReleaseNotes = arguments["--notes"].IsTrue;
                 bool listPreReleases = arguments["--pre"].IsTrue;
@@ -505,16 +518,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             else if (VerifyCommand(activeKeys, "env")) {
 
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "env" },
-                                        "Print environment information\n" +
-                                        "  - clones\n" +
-                                        "  - attachments\n" +
-                                        "  - extensions and paths\n" +
-                                        "  - installed and running revits\n" +
-                                        "  - user environment info\n" +
-                                        "\n" +
-                                        "  Use --json switch to format the data in json."
-                                        );
+                    PrintSubHelpAndExit(
+                        new List<string>() { "env" },
+                        title: "Print environment information.",
+                        options: new Dictionary<string, string>() {
+                                { "--json",     "Switch output format to json." },
+                                { "--notes",    "Print release notes." }
+                            }
+                        );
 
                 if (arguments["--json"].IsTrue) {
 
@@ -564,6 +575,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                 ContractResolver = new CamelCasePropertyNamesContractResolver()
                             })
                         );
+                    
                 }
                 else {
                     PrintClones();
@@ -584,7 +596,17 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             else if (VerifyCommand(activeKeys, "clone")) {
 
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "clone" }, "Create a clone of pyRevit on this machine");
+                    PrintSubHelpAndExit(
+                        new List<string>() { "clone" },
+                        title: "Create a clone of pyRevit on this machine",
+                        options: new Dictionary<string, string>() {
+                                { "<clone_name>",       "Name of this new clone." },
+                                { "<deployment_name>",  "Deployment configuration to deploy from." },
+                                { "--dest",             "Clone destination directory." },
+                                { "--source",           "Clone source; Zip archive or git url." },
+                                { "--branch",           "Branch to clone from." },
+                            }
+                        );
 
                 var cloneName = TryGetValue(arguments, "<clone_name>");
                 var deployName = TryGetValue(arguments, "<deployment_name>");
@@ -604,7 +626,38 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "clones")) {
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "clones" }, "Manage pyRevit clones");
+                    PrintSubHelpAndExit(
+                        new List<string>() { "clones" },
+                        title: "Manage pyRevit clones",
+                        commands: new Dictionary<string, string>() {
+                                { "info",       "Print info about clone." },
+                                { "open",       "Open clone directory in file browser." },
+                                { "add",        "Register an existing clone." },
+                                { "forget",     "Forget a registered clone." },
+                                { "rename",     "Rename a clone." },
+                                { "delete",     "Delete a clone." },
+                                { "branch",     "Get/Set branch of a clone deployed from git repo." },
+                                { "version",    "Get/Set version of a clone deployed from git repo." },
+                                { "commit",     "Get/Set head commit of a clone deployed from git repo." },
+                                { "origin",     "Get/Set origin of a clone deployed from git repo." },
+                                { "update",     "Update clone to latest using the original source, deployment, and branch." },
+                                { "deployment", "List deployments available in a clone." },
+                                { "engines",    "List engines available in a clone." },
+                            },
+                        options: new Dictionary<string, string>() {
+                                { "<clone_name>",       "Name of target clone." },
+                                { "<clone_path>",       "Path of clone." },
+                                { "<clone_new_name>",   "New name of clone." },
+                                { "<branch_name>",      "Clone branch to checkout." },
+                                { "<tag_name>",         "Clone tag to rebase to." },
+                                { "<commit_hash>",      "Clone commit rebase to." },
+                                { "<origin_url>",       "New clone remote origin url." },
+                                { "--reset",            "Reset remote origin url to default." },
+                                { "--clearconfigs",     "Clear pyRevit configurations." },
+                                { "--all",              "All clones." },
+                                { "--branch",           "Branch to clone from." },
+                            }
+                        );
 
                 PrintClones();
             }
@@ -872,8 +925,20 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                     || VerifyCommand(activeKeys, "attach", "dynamosafe")) {
 
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "attach", "attached", "switch", "detach" },
-                                        "Attach pyRevit clone to installed Revit");
+                    PrintSubHelpAndExit(
+                        new List<string>() { "attach" },
+                        title: "Attach pyRevit clone to installed Revit",
+                        options: new Dictionary<string, string>() {
+                                { "<clone_name>",       "Name of target clone." },
+                                { "<revit_year>",       "Revit version year e.g. 2019" },
+                                { "<engine_version>",   "Engine version to be used e.g. 277" },
+                                { "latest",             "Use latest engine." },
+                                { "dynamosafe",         "Use latest engine that is compatible with DynamoBIM." },
+                                { "--installed",        "All installed Revits." },
+                                { "--attached",         "All currently attached installed Revits." },
+                                { "--allusers",         "Attach for all users." },
+                            }
+                        );
 
                 string cloneName = TryGetValue(arguments, "<clone_name>");
                 var clone = PyRevit.GetRegisteredClone(cloneName);
@@ -918,8 +983,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             else if (VerifyCommand(activeKeys, "detach")) {
 
                 if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "detach" },
-                                        "Detach pyRevit clone from installed Revit");
+                    PrintSubHelpAndExit(
+                        new List<string>() { "detach" },
+                        title: "Detach a clone from Revit.",
+                        options: new Dictionary<string, string>() {
+                                { "<revit_year>",   "Revit version year e.g. 2019" },
+                                { "--all",          "All registered clones" },
+                            }
+                        );
 
                 string revitYearValue = TryGetValue(arguments, "<revit_year>");
 
@@ -938,9 +1009,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // $ pyrevit attached [<revit_year>] [--help]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "attached")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "attached" },
-                                        "Manage pyRevit attachments to installed Revit");
+
+                PrintSubHelpAndExit(
+                    new List<string>() { "attached" },
+                    title: "List all attached clones.",
+                    options: new Dictionary<string, string>() {
+                                { "<revit_year>",       "Revit version year e.g. 2019" },
+                        }
+                    );
 
                 string revitYearValue = TryGetValue(arguments, "<revit_year>");
                 if (revitYearValue != null) {
@@ -955,24 +1031,53 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             }
 
             // =======================================================================================================
-            // $ pyrevit switch <clone_name>
+            // $ pyrevit switch <clone_name> [<revit_year>]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "switch")) {
 
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "switch" },
-                                        "Switch active pyRevit clone");
+                PrintSubHelpAndExit(
+                    new List<string>() { "switch" },
+                    title: "Quick switch clone of an existing attachment to another.",
+                    options: new Dictionary<string, string>() {
+                                { "<clone_name>",       "Name of target clone to switch to." },
+                                { "<revit_year>",       "Revit version year e.g. 2019" },
+                        }
+                    );
 
                 string cloneName = TryGetValue(arguments, "<clone_name>");
                 var clone = PyRevit.GetRegisteredClone(cloneName);
                 if (clone != null) {
-                    // read current attachments and reattach using the same config with the new clone
-                    foreach (var attachment in PyRevit.GetAttachments()) {
-                        PyRevit.Attach(attachment.Product.ProductYear,
-                                       clone,
-                                       engineVer: attachment.Engine.Version,
-                                       allUsers: attachment.AllUsers);
+
+                    string revitYearValue = TryGetValue(arguments, "<revit_year>");
+
+                    if (revitYearValue != null) {
+                        int revitYear = 0;
+                        if (int.TryParse(revitYearValue, out revitYear)) {
+                            var attachment = PyRevit.GetAttached(revitYear);
+                            if (attachment != null)
+                                PyRevit.Attach(attachment.Product.ProductYear,
+                                               clone,
+                                               engineVer: attachment.Engine.Version,
+                                               allUsers: attachment.AllUsers);
+                            else
+                                throw new pyRevitException(
+                                    string.Format("Can not determine existing attachment for Revit \"{0}\"",
+                                                  revitYearValue)
+                                    );
+                        }
+                        else
+                            throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYearValue));
                     }
+                    else {
+                        // read current attachments and reattach using the same config with the new clone
+                        foreach (var attachment in PyRevit.GetAttachments()) {
+                            PyRevit.Attach(attachment.Product.ProductYear,
+                                           clone,
+                                           engineVer: attachment.Engine.Version,
+                                           allUsers: attachment.AllUsers);
+                        }
+                    }
+
                 }
             }
 
@@ -2095,20 +2200,46 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             Console.WriteLine(string.Format("==> {0}", header), Color.Green);
         }
 
-        private static void PrintSubHelpAndExit(IEnumerable<string> keywords, string title) {
+        private static void PrintSubHelpAndExit(IEnumerable<string> docoptKeywords,
+                                                string title,
+                                                IDictionary<string, string> commands = null,
+                                                IDictionary<string, string> options = null) {
             // build a help guide for a subcommand based on doctop usage entries
             Console.WriteLine(title + Environment.NewLine);
             foreach (var hline in helpUsage.GetLines())
                 if (hline.Contains("Usage:"))
                     Console.WriteLine(hline);
                 else
-                    foreach (var kword in keywords) {
+                    foreach (var kword in docoptKeywords) {
                         if ((hline.Contains("pyrevit " + kword + " ") || hline.EndsWith(" " + kword))
                             && !hline.Contains("pyrevit " + kword + " --help"))
                             Console.WriteLine(hline);
                     }
-            //Console.WriteLine(helpOptions);
+
+            // print commands help
             Console.WriteLine();
+            if (commands != null) {
+                Console.WriteLine("    Commands:");
+                foreach (var commandPair in commands) {
+                    Console.WriteLine(
+                        string.Format("        {0,-20}{1}", commandPair.Key, commandPair.Value)
+                        );
+                }
+                Console.WriteLine();
+            }
+
+            // print options help
+            if (options != null) {
+                Console.WriteLine("    Options:");
+                foreach(var optionPair in options) {
+                    Console.WriteLine(
+                        string.Format("        {0,-20}{1}", optionPair.Key, optionPair.Value)
+                        );
+                }
+
+                Console.WriteLine();
+            }
+
             Environment.Exit(0);
         }
 
