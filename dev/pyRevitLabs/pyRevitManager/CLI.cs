@@ -40,8 +40,8 @@ namespace pyRevitManager.Views {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private const string updaterExecutive = "pyRevitUpdater.exe";
-        private const string helpTitle = "pyrevit command line tool\n";
-        private const string helpUsage = @"
+
+        private const string doctopUsagePatterns = @"
     Usage:
         pyrevit help
         pyrevit (-h | --help)
@@ -137,23 +137,15 @@ namespace pyRevitManager.Views {
         pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
 ";
 
-        private const string helpOptions = @"
-    Options:
-        --verbose                   Print info messages
-        --debug                     Print docopt options and logger debug messages
-";
-
-        //public static string FullHelp => helpTitle + helpUsage + helpOptions;
-
-        public static string FullHelp = @"Usage: pyrevit [OPTIONS] COMMAND
+        public static string PrettyHelp = @"Usage: pyrevit [OPTIONS] COMMAND
 
 pyRevit environment and clones manager
 
 Options:
-    -h --help                   Show this screen
-    -V --version                Show version
-    --verbose                   Print info messages
-    --debug                     Print docopt options and logger debug messages
+    -h --help       Show this help
+    -V --version    Show version
+    --verbose       Print info messages
+    --debug         Print docopt options and logger debug messages
 
 Management Commands:
     env             Print environment information
@@ -186,6 +178,8 @@ Help Commands:
 
 Run 'pyrevit COMMAND --help' for more information on a command.
 ";
+
+        // main cli version property
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
         public static void ProcessArguments(string[] args) {
@@ -227,7 +221,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             try {
                 // process docopt
                 // docopt raises exception if pattern matching fails
-                var arguments = new Docopt().Apply(helpUsage + helpOptions, argsList, exit: false, help: false);
+                var arguments = new Docopt().Apply(doctopUsagePatterns, argsList, exit: false, help: false);
 
                 // print active arguments in debug mode
                 if (logLevel == pyRevitManagerLogLevel.Debug)
@@ -265,7 +259,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             }
             catch {
                 // when docopt fails, print help
-                Console.WriteLine(FullHelp);
+                Console.WriteLine(PrettyHelp);
             }
         }
 
@@ -600,6 +594,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // $ pyrevit clones
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "clones")) {
+
                 if (arguments["--help"].IsTrue)
                     PrintSubHelpAndExit(
                         new List<string>() { "clones" },
@@ -647,14 +642,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 if (clone != null) {
                     if (arguments["info"].IsTrue) {
                         PrintHeader("Clone info");
-                        Console.WriteLine(string.Format("\"{0}\" = \"{1}\"", clone.Name, clone.ClonePath));
-                        if (clone.IsRepoDeploy) {
-                            Console.WriteLine(string.Format("Clone is on branch \"{0}\"", clone.Branch));
-                            // TODO: grab version from repo (last tag?)
-                            Console.WriteLine(string.Format("Clone is on commit \"{0}\"", clone.Commit));
-                        }
-                        else
-                            ReportCloneAsNoGit(clone);
+                        Console.WriteLine(clone);
                     }
                     else
                         CommonUtils.OpenInExplorer(clone.ClonePath);
@@ -663,7 +651,6 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
             // =======================================================================================================
             // $ pyrevit clones add <clone_name> <clone_path>
-            // $ pyrevit clones forget (--all | <clone_name>)
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "clones", "add")) {
                 var cloneName = TryGetValue(arguments, "<clone_name>");
@@ -672,6 +659,9 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                     PyRevit.RegisterClone(cloneName, clonePath);
             }
 
+            // =======================================================================================================
+            // $ pyrevit clones forget (--all | <clone_name>)
+            // =======================================================================================================
             else if (VerifyCommand(activeKeys, "clones", "forget")) {
                 var cloneName = TryGetValue(arguments, "<clone_name>");
                 if (arguments["--all"].IsTrue)
@@ -985,12 +975,13 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "attached")) {
 
-                PrintSubHelpAndExit(
-                    new List<string>() { "attached" },
-                    title: "List all attached clones.",
-                    options: new Dictionary<string, string>() {
-                                { "<revit_year>",       "Revit version year e.g. 2019" },
-                        }
+                if (arguments["--help"].IsTrue)
+                    PrintSubHelpAndExit(
+                        new List<string>() { "attached" },
+                        title: "List all attached clones.",
+                        options: new Dictionary<string, string>() {
+                                    { "<revit_year>",       "Revit version year e.g. 2019" },
+                            }
                     );
 
                 string revitYearValue = TryGetValue(arguments, "<revit_year>");
@@ -1010,13 +1001,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "switch")) {
 
-                PrintSubHelpAndExit(
-                    new List<string>() { "switch" },
-                    title: "Quick switch clone of an existing attachment to another.",
-                    options: new Dictionary<string, string>() {
-                                { "<clone_name>",       "Name of target clone to switch to." },
-                                { "<revit_year>",       "Revit version year e.g. 2019" },
-                        }
+                if (arguments["--help"].IsTrue)
+                    PrintSubHelpAndExit(
+                        new List<string>() { "switch" },
+                        title: "Quick switch clone of an existing attachment to another.",
+                        options: new Dictionary<string, string>() {
+                                    { "<clone_name>",       "Name of target clone to switch to." },
+                                    { "<revit_year>",       "Revit version year e.g. 2019" },
+                            }
                     );
 
                 string cloneName = TryGetValue(arguments, "<clone_name>");
@@ -1966,7 +1958,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // $ pyrevit (-h|--help)
             // =======================================================================================================
             else if (arguments["--help"].IsTrue || arguments["-h"].IsTrue) {
-                Console.WriteLine(FullHelp);
+                Console.WriteLine(PrettyHelp);
             }
         }
 
@@ -2181,7 +2173,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                                 IDictionary<string, string> options = null) {
             // build a help guide for a subcommand based on doctop usage entries
             Console.WriteLine(title + Environment.NewLine);
-            foreach (var hline in helpUsage.GetLines())
+            foreach (var hline in doctopUsagePatterns.GetLines())
                 if (hline.Contains("Usage:"))
                     Console.WriteLine(hline);
                 else
