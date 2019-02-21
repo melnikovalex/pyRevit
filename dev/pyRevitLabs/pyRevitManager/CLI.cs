@@ -43,10 +43,10 @@ namespace pyRevitManager.Views {
         private const string helpTitle = "pyrevit command line tool\n";
         private const string helpUsage = @"
     Usage:
-        pyrevit help [--help]
+        pyrevit help
         pyrevit (-h | --help)
         pyrevit (-V | --version)
-        pyrevit (blog | docs | source | youtube | support) [--help]
+        pyrevit (blog | docs | source | youtube | support)
         pyrevit releases --help
         pyrevit releases [--notes]
         pyrevit releases latest [--pre] [--notes]
@@ -77,7 +77,7 @@ namespace pyRevitManager.Views {
         pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
         pyrevit attached [<revit_year>] [--help]
         pyrevit switch --help
-        pyrevit switch <clone_name> 
+        pyrevit switch <clone_name> [<revit_year>]
         pyrevit detach --help
         pyrevit detach (--all | <revit_year>) [--log=<log_file>]
         pyrevit extend --help
@@ -320,45 +320,20 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // =======================================================================================================
             // $ pyrevit (blog | docs | source | youtube | support)
             // =======================================================================================================
-            else if (VerifyCommand(activeKeys, "blog")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "blog" },
-                                        "Open pyRevit blog");
-
+            else if (VerifyCommand(activeKeys, "blog"))
                 CommonUtils.OpenUrl(PyRevitConsts.BlogsUrl);
-            }
 
-            else if (VerifyCommand(activeKeys, "docs")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "docs" },
-                                        "Open pyRevit docs");
-
+            else if (VerifyCommand(activeKeys, "docs"))
                 CommonUtils.OpenUrl(PyRevitConsts.DocsUrl);
-            }
 
-            else if (VerifyCommand(activeKeys, "source")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "source" },
-                                        "Open pyRevit source repo");
-
+            else if (VerifyCommand(activeKeys, "source"))
                 CommonUtils.OpenUrl(PyRevitConsts.SourceRepoUrl);
-            }
 
-            else if (VerifyCommand(activeKeys, "youtube")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "youtube" },
-                                        "Open pyRevit on YouTube");
-
+            else if (VerifyCommand(activeKeys, "youtube"))
                 CommonUtils.OpenUrl(PyRevitConsts.YoutubeUrl);
-            }
 
-            else if (VerifyCommand(activeKeys, "support")) {
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "support" },
-                                        "Open pyRevit support page");
-
+            else if (VerifyCommand(activeKeys, "support"))
                 CommonUtils.OpenUrl(PyRevitConsts.SupportRepoUrl);
-            }
 
             // =======================================================================================================
             // $ pyrevit releases --help
@@ -935,7 +910,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                 { "latest",             "Use latest engine." },
                                 { "dynamosafe",         "Use latest engine that is compatible with DynamoBIM." },
                                 { "--installed",        "All installed Revits." },
-                                { "--attached",         "All currently attached installed Revits." },
+                                { "--attached",         "All currently attached Revits." },
                                 { "--allusers",         "Attach for all users." },
                             }
                         );
