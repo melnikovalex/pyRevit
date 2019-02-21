@@ -344,12 +344,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "releases" },
                         title: "Info on pyRevit Releases",
                         commands: new Dictionary<string, string>() {
-                                { "open",       "Open release page in default browser" },
-                                { "download",   "Download installer or archive" }
+                                { "open",               "Open release page in default browser" },
+                                { "download installer", "Download EXE installer for given release, if exists" },
+                                { "download archive",   "Download Zip archive for given release" }
                             },
                         options: new Dictionary<string, string>() {
                                 { "latest",             "Match latest release only" },
                                 { "<search_pattern>",   "Pattern to search releases" },
+                                { "<dest_path>",        "Destination file or directory to download to" },
                                 { "--pre",              "Include pre-releases in the search" },
                                 { "--notes",            "Print release notes" }
                             }
@@ -496,6 +498,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                             }
                         );
 
+                // output to json?
                 if (arguments["--json"].IsTrue) {
 
                     // collecet search paths
@@ -546,6 +549,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         );
                     
                 }
+                // or just print env info
                 else {
                     PrintClones();
                     PrintAttachments();
@@ -569,11 +573,12 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "clone" },
                         title: "Create a clone of pyRevit on this machine",
                         options: new Dictionary<string, string>() {
-                                { "<clone_name>",       "Name of this new clone" },
-                                { "<deployment_name>",  "Deployment configuration to deploy from" },
-                                { "--dest",             "Clone destination directory" },
-                                { "--source",           "Clone source; Zip archive or git url" },
-                                { "--branch",           "Branch to clone from" },
+                                { "<clone_name>",           "Name of this new clone" },
+                                { "<deployment_name>",      "Deployment configuration to deploy from" },
+                                { "<dest_path>",            "Clone destination directory" },
+                                { "<archive_url>",          "Clone source Zip archive url or path" },
+                                { "<repo_url>",             "Clone source git repo url" },
+                                { "<branch_name>",          "Branch to clone from" },
                             }
                         );
 
@@ -611,7 +616,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                 { "commit",     "Get/Set head commit of a clone deployed from git repo" },
                                 { "origin",     "Get/Set origin of a clone deployed from git repo" },
                                 { "update",     "Update clone to latest using the original source, deployment, and branch" },
-                                { "deployment", "List deployments available in a clone" },
+                                { "deployments", "List deployments available in a clone" },
                                 { "engines",    "List engines available in a clone" },
                             },
                         options: new Dictionary<string, string>() {
@@ -2184,12 +2189,15 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                     }
 
             // print commands help
+            int indent = 20;
+            string outputFormat = "        {0,-" + indent.ToString() + "}{1}";
+     
             Console.WriteLine();
             if (commands != null) {
                 Console.WriteLine("    Commands:");
                 foreach (var commandPair in commands) {
                     Console.WriteLine(
-                        string.Format("        {0,-20}{1}", commandPair.Key, commandPair.Value)
+                        string.Format(outputFormat, commandPair.Key, commandPair.Value)
                         );
                 }
                 Console.WriteLine();
@@ -2197,10 +2205,10 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
             // print options help
             if (options != null) {
-                Console.WriteLine("    Options:");
+                Console.WriteLine("    Arguments & Options:");
                 foreach(var optionPair in options) {
                     Console.WriteLine(
-                        string.Format("        {0,-20}{1}", optionPair.Key, optionPair.Value)
+                        string.Format(outputFormat, optionPair.Key, optionPair.Value)
                         );
                 }
 
