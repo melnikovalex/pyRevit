@@ -75,7 +75,7 @@ namespace pyRevitManager.Views {
         pyrevit clones engines <clone_name>
         pyrevit attach --help
         pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
-        pyrevit attached [--help]
+        pyrevit attached [<revit_year>] [--help]
         pyrevit switch --help
         pyrevit switch <clone_name>
         pyrevit detach --help
@@ -513,7 +513,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                         "  - installed and running revits\n" +
                                         "  - user environment info\n" +
                                         "\n" +
-                                        "  Use --json switch to format the data in json." 
+                                        "  Use --json switch to format the data in json."
                                         );
 
                 if (arguments["--json"].IsTrue) {
@@ -921,23 +921,37 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                     PrintSubHelpAndExit(new List<string>() { "detach" },
                                         "Detach pyRevit clone from installed Revit");
 
-                string revitYear = TryGetValue(arguments, "<revit_year>");
+                string revitYearValue = TryGetValue(arguments, "<revit_year>");
 
-                if (revitYear != null)
-                    PyRevit.Detach(int.Parse(revitYear));
+                if (revitYearValue != null) {
+                    int revitYear = 0;
+                    if (int.TryParse(revitYearValue, out revitYear))
+                        PyRevit.Detach(revitYear);
+                    else
+                        throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYearValue));
+                }
                 else if (arguments["--all"].IsTrue)
                     PyRevit.DetachAll();
             }
 
             // =======================================================================================================
-            // $ pyrevit attached
+            // $ pyrevit attached [<revit_year>] [--help]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "attached")) {
                 if (arguments["--help"].IsTrue)
                     PrintSubHelpAndExit(new List<string>() { "attached" },
                                         "Manage pyRevit attachments to installed Revit");
 
-                PrintAttachments();
+                string revitYearValue = TryGetValue(arguments, "<revit_year>");
+                if (revitYearValue != null) {
+                    int revitYear = 0;
+                    if (int.TryParse(revitYearValue, out revitYear))
+                        PrintAttachments(revitYear: revitYear);
+                    else
+                        throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYearValue));
+                }
+                else
+                    PrintAttachments();
             }
 
             // =======================================================================================================
@@ -2109,11 +2123,15 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 Console.WriteLine(clone);
         }
 
-        private static void PrintAttachments() {
+        private static void PrintAttachments(int revitYear = 0) {
             PrintHeader("Attachments");
             foreach (var attachment in PyRevit.GetAttachments().OrderByDescending(x => x.Product.Version)) {
-                if (attachment.Clone != null && attachment.Engine != null)
-                    Console.WriteLine(attachment);
+                if (attachment.Clone != null && attachment.Engine != null) {
+                    if (revitYear == 0)
+                        Console.WriteLine(attachment);
+                    else if (revitYear == attachment.Product.ProductYear)
+                        Console.WriteLine(attachment);
+                }
                 else
                     logger.Error(
                         string.Format("pyRevit is attached to Revit {0} but can not determine the clone and engine",
