@@ -112,6 +112,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="pyrevit-complete.go" />
     <None Include="pyrevit.manifest">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
