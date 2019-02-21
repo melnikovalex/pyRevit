@@ -146,6 +146,7 @@ Options:
     -V --version    Show version
     --verbose       Print info messages
     --debug         Print docopt options and logger debug messages
+    --log           Output log messages to external log file   
 
 Management Commands:
     env             Print environment information
@@ -343,14 +344,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "releases" },
                         title: "Info on pyRevit Releases",
                         commands: new Dictionary<string, string>() {
-                                { "open",       "Open release page in default browser." },
-                                { "download",   "Download installer or archive ." }
+                                { "open",       "Open release page in default browser" },
+                                { "download",   "Download installer or archive" }
                             },
                         options: new Dictionary<string, string>() {
-                                { "latest",             "Match latest release only." },
-                                { "<search_pattern>",   "Pattern to search releases." },
-                                { "--pre",              "Include pre-releases in the search." },
-                                { "--notes",            "Print release notes." }
+                                { "latest",             "Match latest release only" },
+                                { "<search_pattern>",   "Pattern to search releases" },
+                                { "--pre",              "Include pre-releases in the search" },
+                                { "--notes",            "Print release notes" }
                             }
                         );
 
@@ -491,8 +492,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "env" },
                         title: "Print environment information.",
                         options: new Dictionary<string, string>() {
-                                { "--json",     "Switch output format to json." },
-                                { "--notes",    "Print release notes." }
+                                { "--json",     "Switch output format to json" },
                             }
                         );
 
@@ -569,11 +569,11 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "clone" },
                         title: "Create a clone of pyRevit on this machine",
                         options: new Dictionary<string, string>() {
-                                { "<clone_name>",       "Name of this new clone." },
-                                { "<deployment_name>",  "Deployment configuration to deploy from." },
-                                { "--dest",             "Clone destination directory." },
-                                { "--source",           "Clone source; Zip archive or git url." },
-                                { "--branch",           "Branch to clone from." },
+                                { "<clone_name>",       "Name of this new clone" },
+                                { "<deployment_name>",  "Deployment configuration to deploy from" },
+                                { "--dest",             "Clone destination directory" },
+                                { "--source",           "Clone source; Zip archive or git url" },
+                                { "--branch",           "Branch to clone from" },
                             }
                         );
 
@@ -600,32 +600,32 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "clones" },
                         title: "Manage pyRevit clones",
                         commands: new Dictionary<string, string>() {
-                                { "info",       "Print info about clone." },
-                                { "open",       "Open clone directory in file browser." },
-                                { "add",        "Register an existing clone." },
-                                { "forget",     "Forget a registered clone." },
-                                { "rename",     "Rename a clone." },
-                                { "delete",     "Delete a clone." },
-                                { "branch",     "Get/Set branch of a clone deployed from git repo." },
-                                { "version",    "Get/Set version of a clone deployed from git repo." },
-                                { "commit",     "Get/Set head commit of a clone deployed from git repo." },
-                                { "origin",     "Get/Set origin of a clone deployed from git repo." },
-                                { "update",     "Update clone to latest using the original source, deployment, and branch." },
-                                { "deployment", "List deployments available in a clone." },
-                                { "engines",    "List engines available in a clone." },
+                                { "info",       "Print info about clone" },
+                                { "open",       "Open clone directory in file browser" },
+                                { "add",        "Register an existing clone" },
+                                { "forget",     "Forget a registered clone" },
+                                { "rename",     "Rename a clone" },
+                                { "delete",     "Delete a clone" },
+                                { "branch",     "Get/Set branch of a clone deployed from git repo" },
+                                { "version",    "Get/Set version of a clone deployed from git repo" },
+                                { "commit",     "Get/Set head commit of a clone deployed from git repo" },
+                                { "origin",     "Get/Set origin of a clone deployed from git repo" },
+                                { "update",     "Update clone to latest using the original source, deployment, and branch" },
+                                { "deployment", "List deployments available in a clone" },
+                                { "engines",    "List engines available in a clone" },
                             },
                         options: new Dictionary<string, string>() {
-                                { "<clone_name>",       "Name of target clone." },
-                                { "<clone_path>",       "Path of clone." },
-                                { "<clone_new_name>",   "New name of clone." },
-                                { "<branch_name>",      "Clone branch to checkout." },
-                                { "<tag_name>",         "Clone tag to rebase to." },
-                                { "<commit_hash>",      "Clone commit rebase to." },
-                                { "<origin_url>",       "New clone remote origin url." },
-                                { "--reset",            "Reset remote origin url to default." },
+                                { "<clone_name>",       "Name of target clone" },
+                                { "<clone_path>",       "Path of clone" },
+                                { "<clone_new_name>",   "New name of clone" },
+                                { "<branch_name>",      "Clone branch to checkout" },
+                                { "<tag_name>",         "Clone tag to rebase to" },
+                                { "<commit_hash>",      "Clone commit rebase to" },
+                                { "<origin_url>",       "New clone remote origin url" },
+                                { "--reset",            "Reset remote origin url to default" },
                                 { "--clearconfigs",     "Clear pyRevit configurations." },
-                                { "--all",              "All clones." },
-                                { "--branch",           "Branch to clone from." },
+                                { "--all",              "All clones" },
+                                { "--branch",           "Branch to clone from" },
                             }
                         );
 
@@ -894,14 +894,14 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "attach" },
                         title: "Attach pyRevit clone to installed Revit",
                         options: new Dictionary<string, string>() {
-                                { "<clone_name>",       "Name of target clone." },
+                                { "<clone_name>",       "Name of target clone" },
                                 { "<revit_year>",       "Revit version year e.g. 2019" },
                                 { "<engine_version>",   "Engine version to be used e.g. 277" },
-                                { "latest",             "Use latest engine." },
-                                { "dynamosafe",         "Use latest engine that is compatible with DynamoBIM." },
-                                { "--installed",        "All installed Revits." },
-                                { "--attached",         "All currently attached Revits." },
-                                { "--allusers",         "Attach for all users." },
+                                { "latest",             "Use latest engine" },
+                                { "dynamosafe",         "Use latest engine that is compatible with DynamoBIM" },
+                                { "--installed",        "All installed Revits" },
+                                { "--attached",         "All currently attached Revits" },
+                                { "--allusers",         "Attach for all users" },
                             }
                         );
 
@@ -1006,7 +1006,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         new List<string>() { "switch" },
                         title: "Quick switch clone of an existing attachment to another.",
                         options: new Dictionary<string, string>() {
-                                    { "<clone_name>",       "Name of target clone to switch to." },
+                                    { "<clone_name>",       "Name of target clone to switch to" },
                                     { "<revit_year>",       "Revit version year e.g. 2019" },
                             }
                     );
