@@ -7,45 +7,247 @@ func main() {
 	pyrevit := complete.Command{
 		Sub: complete.Commands{
 			"attach": complete.Command{
-				// Flags: complete.Flags{
-				// 	"-cpus": complete.PredictAnything,
-				// },
+				Sub: complete.Commands{
+					"latest":     complete.Command{},
+					"dynamosafe": complete.Command{},
+				},
+				Flags: complete.Flags{
+					"--installed": complete.PredictAnything,
+					"--attached":  complete.PredictAnything,
+					"--allusers":  complete.PredictAnything,
+				},
 			},
 			"attached": complete.Command{},
 			"blog":     complete.Command{},
-			"caches":   complete.Command{},
-			"cli":      complete.Command{},
-			"clone":    complete.Command{},
+			"caches": complete.Command{
+				Sub: complete.Commands{
+					"clear": complete.Command{},
+				},
+				Flags: complete.Flags{
+					"--all": complete.PredictAnything,
+				},
+			},
+			"cli": complete.Command{
+				Sub: complete.Commands{
+					"addshortcut": complete.Command{
+						Flags: complete.Flags{
+							"--desc=":    complete.PredictAnything,
+							"--allusers": complete.PredictAnything,
+						},
+					},
+					"installautocomplete": complete.Command{},
+				},
+			},
+			"clone": complete.Command{
+				Flags: complete.Flags{
+					"--dest=":   complete.PredictAnything,
+					"--source=": complete.PredictAnything,
+					"--branch=": complete.PredictAnything,
+				},
+			},
 			"clones": complete.Command{
 				Sub: complete.Commands{
-					"info":        complete.Command{},
-					"open":        complete.Command{},
-					"add":         complete.Command{},
-					"forget":      complete.Command{},
-					"rename":      complete.Command{},
-					"delete":      complete.Command{},
-					"branch":      complete.Command{},
-					"version":     complete.Command{},
-					"commit":      complete.Command{},
-					"origin":      complete.Command{},
-					"update":      complete.Command{},
+					"info": complete.Command{},
+					"open": complete.Command{},
+					"add":  complete.Command{},
+					"forget": complete.Command{
+						Flags: complete.Flags{
+							"--all": complete.PredictAnything,
+						},
+					},
+					"rename": complete.Command{},
+					"delete": complete.Command{
+						Flags: complete.Flags{
+							"--all": complete.PredictAnything,
+						},
+					},
+					"branch":  complete.Command{},
+					"version": complete.Command{},
+					"commit":  complete.Command{},
+					"origin": complete.Command{
+						Flags: complete.Flags{
+							"--reset": complete.PredictAnything,
+						},
+					},
+					"update": complete.Command{
+						Flags: complete.Flags{
+							"--all": complete.PredictAnything,
+						},
+					},
 					"deployments": complete.Command{},
 					"engines":     complete.Command{},
 				},
 			},
-			"config":  complete.Command{},
-			"configs": complete.Command{},
-			"detach":  complete.Command{},
-			"docs":    complete.Command{},
+			"config": complete.Command{},
+			"configs": complete.Command{
+				Sub: complete.Commands{
+					"logs": complete.Command{
+						Sub: complete.Commands{
+							"none":    complete.Command{},
+							"verbose": complete.Command{},
+							"debug":   complete.Command{},
+						},
+					},
+					"allowremotedll": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"checkupdates": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"autoupdate": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"rocketmode": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"filelogging": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"loadbeta": complete.Command{
+						Sub: complete.Commands{
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"usercanupdate": complete.Command{
+						Sub: complete.Commands{
+							"Yes": complete.Command{},
+							"No":  complete.Command{},
+						},
+					},
+					"usercanextend": complete.Command{
+						Sub: complete.Commands{
+							"Yes": complete.Command{},
+							"No":  complete.Command{},
+						},
+					},
+					"usercanconfig": complete.Command{
+						Sub: complete.Commands{
+							"Yes": complete.Command{},
+							"No":  complete.Command{},
+						},
+					},
+					"usagelogging": complete.Command{
+						Sub: complete.Commands{
+							"enable": complete.Command{
+								Sub: complete.Commands{
+									"file":   complete.Command{},
+									"server": complete.Command{},
+								},
+							},
+							"disable": complete.Command{},
+						},
+					},
+					"outputcss": complete.Command{},
+					"seed": complete.Command{
+						Flags: complete.Flags{
+							"--lock": complete.PredictAnything,
+						},
+					},
+				},
+				Flags: complete.Flags{
+					"--all": complete.PredictAnything,
+				},
+			},
+			"detach": complete.Command{
+				Flags: complete.Flags{
+					"--all": complete.PredictAnything,
+				},
+			},
+			"docs": complete.Command{},
 			"env": complete.Command{
 				Flags: complete.Flags{
 					"--json": complete.PredictAnything,
 				},
 			},
-			"extend":    complete.Command{},
-			"extension": complete.Command{},
-			"help":      complete.Command{},
-			"init":      complete.Command{},
+			"extend": complete.Command{
+				Sub: complete.Commands{
+					"ui":  complete.Command{},
+					"lib": complete.Command{},
+					"run": complete.Command{},
+				},
+				Flags: complete.Flags{
+					"--dest=":   complete.PredictAnything,
+					"--branch=": complete.PredictAnything,
+				},
+			},
+			"extension": complete.Command{
+				Sub: complete.Commands{
+					"search": complete.Command{},
+					"info":   complete.Command{},
+					"help":   complete.Command{},
+					"open":   complete.Command{},
+					"delete": complete.Command{},
+					"origin": complete.Command{
+						Flags: complete.Flags{
+							"--reset": complete.PredictAnything,
+						},
+					},
+					"paths": complete.Command{
+						Sub: complete.Commands{
+							"add": complete.Command{},
+							"forget": complete.Command{
+								Flags: complete.Flags{
+									"--all": complete.PredictAnything,
+								},
+							},
+						},
+					},
+					"enable":  complete.Command{},
+					"disable": complete.Command{},
+					"sources": complete.Command{
+						Sub: complete.Commands{
+							"add": complete.Command{},
+							"forget": complete.Command{
+								Flags: complete.Flags{
+									"--all": complete.PredictAnything,
+								},
+							},
+						},
+					},
+					"update": complete.Command{
+						Flags: complete.Flags{
+							"--all": complete.PredictAnything,
+						},
+					},
+				},
+			},
+			"help": complete.Command{},
+			"init": complete.Command{
+				Sub: complete.Commands{
+					"ui":        complete.Command{},
+					"lib":       complete.Command{},
+					"run":       complete.Command{},
+					"tab":       complete.Command{},
+					"panel":     complete.Command{},
+					"panelopt":  complete.Command{},
+					"pull":      complete.Command{},
+					"split":     complete.Command{},
+					"splitpush": complete.Command{},
+					"push":      complete.Command{},
+					"smart":     complete.Command{},
+					"command":   complete.Command{},
+				},
+				Flags: complete.Flags{
+					"--usetemplate": complete.PredictAnything,
+					"--templates=":  complete.PredictAnything,
+				},
+			},
 			"releases": complete.Command{
 				Sub: complete.Commands{
 					"open": complete.Command{},
@@ -57,8 +259,40 @@ func main() {
 					},
 				},
 			},
-			"revits":  complete.Command{},
-			"run":     complete.Command{},
+			"revits": complete.Command{
+				Sub: complete.Commands{
+					"killall": complete.Command{},
+					"fileinfo": complete.Command{
+						Flags: complete.Flags{
+							"--csv=": complete.PredictAnything,
+						},
+					},
+					"addons": complete.Command{
+						Sub: complete.Commands{
+							"prepare": complete.Command{
+								Flags: complete.Flags{
+									"--allusers": complete.PredictAnything,
+								},
+							},
+							"install": complete.Command{
+								Flags: complete.Flags{
+									"--allusers": complete.PredictAnything,
+								},
+							},
+							"uninstall": complete.Command{},
+						},
+					},
+				},
+				Flags: complete.Flags{
+					"--installed": complete.PredictAnything,
+				},
+			},
+			"run": complete.Command{
+				Flags: complete.Flags{
+					"--revit=": complete.PredictAnything,
+					"--purge":  complete.PredictAnything,
+				},
+			},
 			"source":  complete.Command{},
 			"support": complete.Command{},
 			"switch":  complete.Command{},
@@ -76,6 +310,7 @@ func main() {
 			"--help":    complete.PredictNothing,
 			"--verbose": complete.PredictNothing,
 			"--debug":   complete.PredictNothing,
+			"--log=":    complete.PredictNothing,
 		},
 	}
 

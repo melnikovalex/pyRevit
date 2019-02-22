@@ -40,6 +40,7 @@ namespace pyRevitManager.Views {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private const string updaterBinaryName = "pyrevit-updater";
+        private const string autocompleteBinaryName = "pyrevit-complete";
 
         private const string doctopUsagePatterns = @"
     Usage:
@@ -135,6 +136,7 @@ namespace pyRevitManager.Views {
         pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
         pyrevit cli --help
         pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
+        pyrevit cli installautocomplete
 ";
 
         public static string PrettyHelp = @"Usage: pyrevit [OPTIONS] COMMAND
@@ -547,7 +549,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                                 ContractResolver = new CamelCasePropertyNamesContractResolver()
                             })
                         );
-                    
+
                 }
                 // or just print env info
                 else {
@@ -1959,6 +1961,26 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         allUsers: arguments["--allusers"].IsTrue
                         );
                 }
+            }
+
+            // =======================================================================================================
+            // $ pyrevit cli installautocomplete
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "cli", "installautocomplete")) {
+                // launch update
+                var processPath = GetProcessPath();
+                var installAutoCompleteCommand = Path.Combine(processPath, autocompleteBinaryName + ".exe");
+
+                logger.Debug("Autocomplete installer is \"{0}\"", installAutoCompleteCommand);
+                ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(installAutoCompleteCommand);
+                updaterProcessInfo.Arguments = "-install -y";
+                updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(processPath);
+                updaterProcessInfo.UseShellExecute = false;
+                updaterProcessInfo.CreateNoWindow = true;
+                logger.Debug("Calling autocomplete installer and exiting...");
+                Process.Start(updaterProcessInfo);
+                // and exit self
+                Environment.Exit(0);
             }
 
             // =======================================================================================================
