@@ -853,7 +853,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 // TODO: ask for closing running Revits
 
                 // prepare a list of clones to be updated
-                var clones = new List<PyRevitClone>();
+                var targetClones = new List<PyRevitClone>();
                 // separate the clone that this process might be running from
                 // this is used to update this clone from outside since the dlls will be locked
                 PyRevitClone myClone = null;
@@ -864,7 +864,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         if (IsRunningInsideClone(clone))
                             myClone = clone;
                         else
-                            clones.Add(clone);
+                            targetClones.Add(clone);
                 }
                 // or single clone
                 else {
@@ -874,13 +874,15 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                         if (IsRunningInsideClone(clone))
                             myClone = clone;
                         else
-                            clones.Add(clone);
+                            targetClones.Add(clone);
                     }
                 }
 
                 // update clones that do not include this process
-                foreach (var clone in clones)
+                foreach (var clone in targetClones) {
+                    logger.Debug("Updating clone \"{0}\"", clone.Name);
                     PyRevit.Update(clone);
+                }
 
                 // now update myClone if any, as last step
                 if (myClone != null)
@@ -2090,6 +2092,8 @@ Run 'pyrevit COMMAND --help' for more information on a command.
         }
 
         private static void UpdateFromOutsideAndClose(PyRevitClone clone, bool showgui = false) {
+            logger.Debug("Updating clone \"{0}\" using outside process", clone.Name);
+
             // prepare outside updater
             var updaterBinaryPath = Path.Combine(GetProcessPath(), updaterBinaryName);
             var updaterTempPath = Path.Combine(UserEnv.UserTemp, updaterBinaryName);
