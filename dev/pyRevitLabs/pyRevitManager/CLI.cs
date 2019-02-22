@@ -7,6 +7,8 @@ using System.IO;
 using System.Diagnostics;
 using System.Drawing;
 
+using pyRevitManager.Properties;
+
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
 using pyRevitLabs.Common.Extensions;
@@ -30,157 +32,29 @@ using Console = Colorful.Console;
 
 namespace pyRevitManager.Views {
 
-    public enum pyRevitManagerLogLevel {
+    public enum PyRevitCLILogLevel {
         Quiet,
         InfoMessages,
         Debug,
     }
 
-    class pyRevitCLI {
+    class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private const string updaterBinaryName = "pyrevit-updater";
         private const string autocompleteBinaryName = "pyrevit-complete";
 
-        private const string doctopUsagePatterns = @"
-    Usage:
-        pyrevit help
-        pyrevit (-h | --help)
-        pyrevit (-V | --version)
-        pyrevit (blog | docs | source | youtube | support)
-        pyrevit releases --help
-        pyrevit releases [--notes]
-        pyrevit releases latest [--pre] [--notes]
-        pyrevit releases <search_pattern> [--notes]
-        pyrevit releases open latest [--pre]
-        pyrevit releases open <search_pattern>
-        pyrevit releases download (installer | archive) latest --dest=<dest_path> [--pre]
-        pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
-        pyrevit env [--json] [--help] [--log=<log_file>]
-        pyrevit clone --help
-        pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--source=<archive_url>] [--branch=<branch_name>] [--log=<log_file>]
-        pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
-        pyrevit clones [--help]
-        pyrevit clones (info | open) <clone_name>
-        pyrevit clones add <clone_name> <clone_path> [--log=<log_file>]
-        pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
-        pyrevit clones rename <clone_name> <clone_new_name> [--log=<log_file>]
-        pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
-        pyrevit clones branch <clone_name> [<branch_name>] [--log=<log_file>]
-        pyrevit clones version <clone_name> [<tag_name>] [--log=<log_file>]
-        pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
-        pyrevit clones origin <clone_name> --reset [--log=<log_file>]
-        pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
-        pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [--gui]
-        pyrevit clones deployments <clone_name>
-        pyrevit clones engines <clone_name>
-        pyrevit attach --help
-        pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
-        pyrevit attached [<revit_year>] [--help]
-        pyrevit switch --help
-        pyrevit switch <clone_name> [<revit_year>]
-        pyrevit detach --help
-        pyrevit detach (--all | <revit_year>) [--log=<log_file>]
-        pyrevit extend --help
-        pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-        pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-        pyrevit extensions [--help]
-        pyrevit extensions search <search_pattern>
-        pyrevit extensions (info | help | open) <extension_name>
-        pyrevit extensions delete <extension_name> [--log=<log_file>]
-        pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
-        pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
-        pyrevit extensions paths
-        pyrevit extensions paths forget --all [--log=<log_file>]
-        pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
-        pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
-        pyrevit extensions sources
-        pyrevit extensions sources forget --all [--log=<log_file>]
-        pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
-        pyrevit extensions update (--all | <extension_name>) [--log=<log_file>]
-        pyrevit revits --help
-        pyrevit revits [--installed] [--log=<log_file>]
-        pyrevit revits killall [<revit_year>] [--log=<log_file>]
-        pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>]
-        pyrevit revits addons
-        pyrevit revits addons prepare <revit_year> [--allusers]
-        pyrevit revits addons install <addon_name> <dest_path> [--allusers]
-        pyrevit revits addons uninstall <addon_name>
-        pyrevit run --help
-        pyrevit run <script_file_or_command_name> [--revit=<revit_year>] [--purge]
-        pyrevit run <script_file_or_command_name> <model_file> [--revit=<revit_year>] [--purge]
-        pyrevit init --help
-        pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<templates_path>]
-        pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
-        pyrevit caches --help
-        pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
-        pyrevit config --help
-        pyrevit config <template_config_path> [--log=<log_file>]
-        pyrevit configs --help
-        pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
-        pyrevit configs allowremotedll [(enable | disable)] [--log=<log_file>]
-        pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
-        pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
-        pyrevit configs rocketmode [(enable | disable)] [--log=<log_file>]
-        pyrevit configs filelogging [(enable | disable)] [--log=<log_file>]
-        pyrevit configs loadbeta [(enable | disable)] [--log=<log_file>]
-        pyrevit configs usercanupdate [(Yes | No)] [--log=<log_file>]
-        pyrevit configs usercanextend [(Yes | No)] [--log=<log_file>]
-        pyrevit configs usercanconfig [(Yes | No)] [--log=<log_file>]
-        pyrevit configs usagelogging
-        pyrevit configs usagelogging enable (file | server) <dest_path> [--log=<log_file>]
-        pyrevit configs usagelogging disable [--log=<log_file>]
-        pyrevit configs outputcss [<css_path>] [--log=<log_file>]
-        pyrevit configs seed [--lock] [--log=<log_file>]
-        pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
-        pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
-        pyrevit cli --help
-        pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
-        pyrevit cli installautocomplete
-";
+        private static string doctopUsagePatterns {
+            get {
+                return Resources.UsagePatterns;
+            }
+        }
 
-        public static string PrettyHelp = @"Usage: pyrevit [OPTIONS] COMMAND
-
-pyRevit environment and clones manager
-
-Options:
-    -h --help       Show this help
-    -V --version    Show version
-    --verbose       Print info messages
-    --debug         Print docopt options and logger debug messages
-    --log           Output log messages to external log file   
-
-Management Commands:
-    env             Print environment information
-    releases        Info about pyRevit releases
-    clones          Manage pyRevit clones
-    extensions      Manage pyRevit extensions
-    configs         Manage pyRevit configurations
-    attached        Manage pyRevit attachments to installed Revit
-    caches          Manage pyRevit caches
-    revits          Manage installed Revits
-    cli             Manage this utility
-
-Commands:
-    clone           Create a clone of pyRevit on this machine
-    extend          Create a clone of a third-party pyRevit extension on this machine
-    attach          Attach pyRevit clone to installed Revit
-    switch          Switch active pyRevit clone
-    detach          Detach pyRevit clone from installed Revit
-    config          Configure pyRevit for current user
-    run             Run python script in Revit
-    init            Init pyRevit bundle
-
-Help Commands:
-    help            Open help in default browser
-    blog            Open pyRevit blog
-    docs            Open pyRevit docs
-    source          Open pyRevit source repo
-    youtube         Open pyRevit on YouTube
-    support         Open pyRevit support page
-
-Run 'pyrevit COMMAND --help' for more information on a command.
-";
+        public static string PrettyHelp {
+            get {
+                return Resources.PrettyHelp;
+            }
+        }
 
         // main cli version property
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
@@ -202,7 +76,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
             // setup logger
             // process arguments for hidden debug mode switch
-            pyRevitManagerLogLevel logLevel = pyRevitManagerLogLevel.InfoMessages;
+            PyRevitCLILogLevel logLevel = PyRevitCLILogLevel.InfoMessages;
             var config = new LoggingConfiguration();
             var logconsole = new ConsoleTarget("logconsole") { Layout = @"${level}: ${message} ${exception}" };
             config.AddTarget(logconsole);
@@ -210,13 +84,13 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
             if (argsList.Contains("--verbose")) {
                 argsList.Remove("--verbose");
-                logLevel = pyRevitManagerLogLevel.InfoMessages;
+                logLevel = PyRevitCLILogLevel.InfoMessages;
                 config.AddRule(LogLevel.Info, LogLevel.Info, logconsole);
             }
 
             if (argsList.Contains("--debug")) {
                 argsList.Remove("--debug");
-                logLevel = pyRevitManagerLogLevel.Debug;
+                logLevel = PyRevitCLILogLevel.Debug;
                 config.AddRule(LogLevel.Debug, LogLevel.Debug, logconsole);
             }
 
@@ -227,7 +101,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
                 var arguments = new Docopt().Apply(doctopUsagePatterns, argsList, exit: false, help: false);
 
                 // print active arguments in debug mode
-                if (logLevel == pyRevitManagerLogLevel.Debug)
+                if (logLevel == PyRevitCLILogLevel.Debug)
                     foreach (var argument in arguments.OrderBy(x => x.Key)) {
                         if (argument.Value != null && (argument.Value.IsTrue || argument.Value.IsString))
                             Console.WriteLine("{0} = {1}", argument.Key, argument.Value);
@@ -2033,8 +1907,8 @@ Run 'pyrevit COMMAND --help' for more information on a command.
         }
 
         // process generated error codes and show prompts if necessary
-        private static void LogException(Exception ex, pyRevitManagerLogLevel logLevel) {
-            if (logLevel == pyRevitManagerLogLevel.Debug)
+        private static void LogException(Exception ex, PyRevitCLILogLevel logLevel) {
+            if (logLevel == PyRevitCLILogLevel.Debug)
                 logger.Error(string.Format("{0} ({1})\n{2}", ex.Message, ex.GetType().ToString(), ex.StackTrace));
             else
                 logger.Error(string.Format("{0}\nRun with \"--debug\" option to see debug messages", ex.Message));
@@ -2213,7 +2087,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // print commands help
             int indent = 20;
             string outputFormat = "        {0,-" + indent.ToString() + "}{1}";
-     
+
             Console.WriteLine();
             if (commands != null) {
                 Console.WriteLine("    Commands:");
@@ -2228,7 +2102,7 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             // print options help
             if (options != null) {
                 Console.WriteLine("    Arguments & Options:");
-                foreach(var optionPair in options) {
+                foreach (var optionPair in options) {
                     Console.WriteLine(
                         string.Format(outputFormat, optionPair.Key, optionPair.Value)
                         );

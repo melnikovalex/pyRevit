@@ -17,7 +17,7 @@ namespace pyRevitManager {
     public partial class App : Application
     {
         private void ApplicationStartup(object sender, StartupEventArgs e) {
-            pyRevitCLI.ProcessArguments(e.Args);
+            PyRevitCLI.ProcessArguments(e.Args);
 
             Shutdown(0);
             Environment.Exit(0);
