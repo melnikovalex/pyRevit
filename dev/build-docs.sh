@@ -1,3 +1,4 @@
+#!/bin/bash
 THISPATH=$(dirname "$0")
 if [ "-r" = $1 ]; then
     rm -rf $THISPATH/../docs/_build
