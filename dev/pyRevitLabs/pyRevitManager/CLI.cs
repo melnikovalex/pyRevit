@@ -39,7 +39,7 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string updaterBinaryName = "pyrevit-updater.bin";
+        private const string updaterBinaryName = "pyrevit-updater";
 
         private const string doctopUsagePatterns = @"
     Usage:
@@ -2090,29 +2090,24 @@ Run 'pyrevit COMMAND --help' for more information on a command.
         }
 
         private static void UpdateFromOutsideAndClose(PyRevitClone clone, bool showgui = false) {
-            var userTemp = System.Environment.ExpandEnvironmentVariables("%TEMP%");
-            var sourceUpdater = Path.Combine(GetProcessPath(), updaterBinaryName);
-            var updaterPath = Path.Combine(userTemp, updaterBinaryName);
-
             // prepare outside updater
-            logger.Debug("Setting up \"{0}\" to \"{1}\"", sourceUpdater, updaterPath);
-            File.Copy(sourceUpdater, updaterPath, overwrite: true);
+            var updaterBinaryPath = Path.Combine(GetProcessPath(), updaterBinaryName);
+            var updaterTempPath = Path.Combine(UserEnv.UserTemp, updaterBinaryName);
+            logger.Debug("Setting up \"{0}\" to \"{1}\"", updaterBinaryPath, updaterTempPath);
+            File.Copy(updaterBinaryPath, updaterTempPath, overwrite: true);
 
             // make a updater bat file
-            var updaterBATFile = Path.Combine(userTemp, updaterBinaryName.ToLower().Replace(".exe", ".bat"));
+            var updaterBATFile = Path.Combine(UserEnv.UserTemp, updaterBinaryName + ".bat");
             using (var batFile = new StreamWriter(File.Create(updaterBATFile))) {
                 batFile.WriteLine("@ECHO OFF");
                 batFile.WriteLine("TIMEOUT /t 1 /nobreak >NUL  2>NUL");
                 batFile.WriteLine("TASKKILL /IM \"{0}\" >NUL  2>NUL", Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName));
-                if (showgui)
-                    batFile.WriteLine("START \"\" /B \"{0}\" \"{1}\" --gui", updaterPath, clone.ClonePath);
-                else
-                    batFile.WriteLine("START \"\" /B \"{0}\" \"{1}\"", updaterPath, clone.ClonePath);
+                batFile.WriteLine("START \"\" /B \"{0}\" \"{1}\"", updaterTempPath, clone.ClonePath);
             }
 
             // launch update
             ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(updaterBATFile);
-            updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(updaterPath);
+            updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(updaterTempPath);
             updaterProcessInfo.UseShellExecute = false;
             updaterProcessInfo.CreateNoWindow = true;
             logger.Debug("Calling outside update and exiting...");
