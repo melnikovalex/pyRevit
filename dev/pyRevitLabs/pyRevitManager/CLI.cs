@@ -2095,8 +2095,9 @@ Run 'pyrevit COMMAND --help' for more information on a command.
             logger.Debug("Updating clone \"{0}\" using outside process", clone.Name);
 
             // prepare outside updater
+            var updaterTempBinary = updaterBinaryName + ".exe";
             var updaterBinaryPath = Path.Combine(GetProcessPath(), updaterBinaryName);
-            var updaterTempPath = Path.Combine(UserEnv.UserTemp, updaterBinaryName);
+            var updaterTempPath = Path.Combine(UserEnv.UserTemp, updaterTempBinary);
             logger.Debug("Setting up \"{0}\" to \"{1}\"", updaterBinaryPath, updaterTempPath);
             File.Copy(updaterBinaryPath, updaterTempPath, overwrite: true);
 
