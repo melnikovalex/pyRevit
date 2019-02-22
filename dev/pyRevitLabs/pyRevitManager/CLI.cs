@@ -39,7 +39,7 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string updaterExecutive = "pyRevitUpdater.exe";
+        private const string updaterBinaryName = "pyrevit-updater.bin";
 
         private const string doctopUsagePatterns = @"
     Usage:
@@ -2091,15 +2091,15 @@ Run 'pyrevit COMMAND --help' for more information on a command.
 
         private static void UpdateFromOutsideAndClose(PyRevitClone clone, bool showgui = false) {
             var userTemp = System.Environment.ExpandEnvironmentVariables("%TEMP%");
-            var sourceUpdater = Path.Combine(GetProcessPath(), updaterExecutive);
-            var updaterPath = Path.Combine(userTemp, updaterExecutive);
+            var sourceUpdater = Path.Combine(GetProcessPath(), updaterBinaryName);
+            var updaterPath = Path.Combine(userTemp, updaterBinaryName);
 
             // prepare outside updater
             logger.Debug("Setting up \"{0}\" to \"{1}\"", sourceUpdater, updaterPath);
             File.Copy(sourceUpdater, updaterPath, overwrite: true);
 
             // make a updater bat file
-            var updaterBATFile = Path.Combine(userTemp, updaterExecutive.ToLower().Replace(".exe", ".bat"));
+            var updaterBATFile = Path.Combine(userTemp, updaterBinaryName.ToLower().Replace(".exe", ".bat"));
             using (var batFile = new StreamWriter(File.Create(updaterBATFile))) {
                 batFile.WriteLine("@ECHO OFF");
                 batFile.WriteLine("TIMEOUT /t 1 /nobreak >NUL  2>NUL");
