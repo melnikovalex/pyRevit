@@ -59,7 +59,7 @@ namespace pyRevitManager.Views {
         // main cli version property
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
-        public static void ProcessArguments(string[] args) {
+        static void Main(string[] args) {
 
             // process arguments for logging level
             var argsList = new List<string>(args);

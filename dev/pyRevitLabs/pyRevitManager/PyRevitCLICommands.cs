@@ -9,6 +9,8 @@ namespace pyRevitManager {
     class PyRevitCLICommands {
 
         // return command definitions from resource file
+        // the resource defines the command structure of the cli process
+        // parsing and generating the help depends on this definition
         public static string CommandsDefinition {
             get {
                 return Encoding.UTF8.GetString(Resources.pyrevit);
