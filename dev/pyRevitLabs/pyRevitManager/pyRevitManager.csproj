@@ -95,9 +95,14 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="PyRevitCLIHelp.cs" />
-    <Compile Include="PyRevitCLIUtils.cs" />
+    <Compile Include="PyRevitCLICommandsHelp.cs" />
     <Compile Include="PyRevitCLICommands.cs" />
+    <Compile Include="PyRevitCLIRevitCmd.cs" />
+    <Compile Include="PyRevitCLLInitCmd.cs" />
+    <Compile Include="PyRevitCLIReleasesCmd.cs" />
+    <Compile Include="PyRevitCLIClonesCmd.cs" />
+    <Compile Include="PyRevitCLIConfigsCmd.cs" />
+    <Compile Include="PyRevitCLIExtensionsCmd.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

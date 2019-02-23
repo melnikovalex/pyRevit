@@ -9,7 +9,7 @@ using pyRevitManager.Properties;
 using pyRevitLabs.Common.Extensions;
 
 namespace pyRevitManager {
-    internal class PyRevitCLIHelp {
+    internal class PyRevitCLICommandsHelp {
         // help strings
         internal static string UsagePatterns => Resources.UsagePatterns;
         private static string PrettyHelp => Resources.PrettyHelp;
@@ -17,12 +17,10 @@ namespace pyRevitManager {
         internal static void PrintCommandHelpAndExit(PyRevitCLICommandType commandType) {
             switch (commandType) {
                 
-                // pyrevit
                 case PyRevitCLICommandType.Main:
                     Console.WriteLine(PrettyHelp);
                     break;
                 
-                // pyrevit help
                 case PyRevitCLICommandType.Help:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "help" },
@@ -30,7 +28,6 @@ namespace pyRevitManager {
                         );
                     break;
 
-                // pyrevit releases
                 case PyRevitCLICommandType.Releases:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "releases" },
@@ -49,7 +46,6 @@ namespace pyRevitManager {
                         });
                     break;
 
-                // pyrevit env
                 case PyRevitCLICommandType.Env:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "env" },
@@ -59,7 +55,6 @@ namespace pyRevitManager {
                         });
                     break;
 
-                // pyrevit clone
                 case PyRevitCLICommandType.Clone:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "clone" },
@@ -74,7 +69,6 @@ namespace pyRevitManager {
                         });
                     break;
 
-                // pyrevit clones
                 case PyRevitCLICommandType.Clones:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "clones" },
@@ -109,7 +103,6 @@ namespace pyRevitManager {
                         });
                     break;
 
-                // pyrevit attach
                 case PyRevitCLICommandType.Attach:
                     GenerateHelpFromUsagePatterns(
                         new List<string>() { "attach" },
