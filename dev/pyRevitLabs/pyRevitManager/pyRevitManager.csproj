@@ -95,6 +95,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="PyRevitCLIHelp.cs" />
+    <Compile Include="PyRevitCLIUtils.cs" />
+    <Compile Include="PyRevitCLICommands.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
