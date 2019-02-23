@@ -85,16 +85,6 @@ namespace pyRevitManager.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] pyrevit {
-            get {
-                object obj = ResourceManager.GetObject("pyrevit", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Usage:
         ///    pyrevit help
         ///    pyrevit (-h | --help)

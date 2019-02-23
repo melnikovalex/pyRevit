@@ -90,7 +90,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PyRevitCLI.cs" />
-    <Compile Include="PyRevitCLICommands.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -101,7 +100,6 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <None Include="Resources\pyrevit.yaml" />
     <None Include="pyrevit-complete.go" />
     <None Include="pyrevit.manifest">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -169,9 +167,6 @@
     </PackageReference>
     <PackageReference Include="NLog">
       <Version>4.5.11</Version>
-    </PackageReference>
-    <PackageReference Include="YamlDotNet">
-      <Version>5.4.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
