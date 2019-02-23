@@ -43,7 +43,7 @@ namespace pyRevitManager {
         Cli
     }
 
-    internal static class PyRevitCLICommands {
+    internal static class PyRevitCLIAppCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         // private consts:
@@ -190,13 +190,13 @@ namespace pyRevitManager {
 
         internal static void
         PrintEnvReport() {
-            PyRevitCLIClonesCmd.PrintClones();
-            PyRevitCLIClonesCmd.PrintAttachments();
-            PyRevitCLIExtensionsCmd.PrintExtensions();
-            PyRevitCLIExtensionsCmd.PrintExtensionSearchPaths();
-            PyRevitCLIExtensionsCmd.PrintExtensionLookupSources();
-            PyRevitCLIRevitCmd.PrintRevits();
-            PyRevitCLIRevitCmd.PrintRevits(running: true);
+            PyRevitCLICloneCmds.PrintClones();
+            PyRevitCLICloneCmds.PrintAttachments();
+            PyRevitCLIExtensionCmds.PrintExtensions();
+            PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
+            PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
+            PyRevitCLIRevitCmds.PrintRevits();
+            PyRevitCLIRevitCmds.PrintRevits(running: true);
             PrinUserEnv();
         }
 

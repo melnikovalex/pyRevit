@@ -20,7 +20,7 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLIExtensionsCmd {
+    internal static class PyRevitCLIExtensionCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         internal static void
@@ -28,32 +28,32 @@ namespace pyRevitManager {
             if (extList == null)
                 extList = PyRevit.GetInstalledExtensions();
 
-            PyRevitCLICommands.PrintHeader(string.Format("{0} Extensions", headerPrefix));
+            PyRevitCLIAppCmds.PrintHeader(string.Format("{0} Extensions", headerPrefix));
             foreach (PyRevitExtension ext in extList.OrderBy(x => x.Name))
                 Console.WriteLine(ext);
         }
 
         internal static void
         PrintExtensionDefinitions(string searchPattern, string headerPrefix = "Registered") {
-            PyRevitCLICommands.PrintHeader(string.Format("{0} Extensions", headerPrefix));
+            PyRevitCLIAppCmds.PrintHeader(string.Format("{0} Extensions", headerPrefix));
             foreach (PyRevitExtensionDefinition ext in PyRevit.LookupRegisteredExtensions(searchPattern))
                 Console.WriteLine(ext);
         }
 
         internal static void
         PrintExtensionSearchPaths() {
-            PyRevitCLICommands.PrintHeader("Default Extension Search Path");
+            PyRevitCLIAppCmds.PrintHeader("Default Extension Search Path");
             Console.WriteLine(PyRevit.pyRevitDefaultExtensionsPath);
-            PyRevitCLICommands.PrintHeader("Extension Search Paths");
+            PyRevitCLIAppCmds.PrintHeader("Extension Search Paths");
             foreach (var searchPath in PyRevit.GetRegisteredExtensionSearchPaths())
                 Console.WriteLine(searchPath);
         }
 
         internal static void
         PrintExtensionLookupSources() {
-            PyRevitCLICommands.PrintHeader("Extension Sources - Default");
+            PyRevitCLIAppCmds.PrintHeader("Extension Sources - Default");
             Console.WriteLine(PyRevit.GetDefaultExtensionLookupSource());
-            PyRevitCLICommands.PrintHeader("Extension Sources - Additional");
+            PyRevitCLIAppCmds.PrintHeader("Extension Sources - Additional");
             foreach (var extLookupSrc in PyRevit.GetRegisteredExtensionLookupSources())
                 Console.WriteLine(extLookupSrc);
         }

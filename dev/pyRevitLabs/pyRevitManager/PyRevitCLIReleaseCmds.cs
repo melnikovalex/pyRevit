@@ -20,13 +20,13 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLIReleasesCmd {
+    internal static class PyRevitCLIReleaseCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         // handle releases
         internal static void
         PrintReleases(string searchPattern, bool latest = false, bool printReleaseNotes = false, bool listPreReleases = false) {
-            PyRevitCLICommands.PrintHeader("Releases");
+            PyRevitCLIAppCmds.PrintHeader("Releases");
             List<PyRevitRelease> releasesToList = new List<PyRevitRelease>();
 
             // determine latest release

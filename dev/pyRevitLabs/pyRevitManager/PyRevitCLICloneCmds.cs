@@ -20,24 +20,24 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLIClonesCmd {
+    internal static class PyRevitCLICloneCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         internal static void
         PrintClones() {
-            PyRevitCLICommands.PrintHeader("Registered Clones (full git repos)");
+            PyRevitCLIAppCmds.PrintHeader("Registered Clones (full git repos)");
             var clones = PyRevit.GetRegisteredClones().OrderBy(x => x.Name);
             foreach (var clone in clones.Where(c => c.IsRepoDeploy))
                 Console.WriteLine(clone);
 
-            PyRevitCLICommands.PrintHeader("Registered Clones (deployed from archive)");
+            PyRevitCLIAppCmds.PrintHeader("Registered Clones (deployed from archive)");
             foreach (var clone in clones.Where(c => !c.IsRepoDeploy))
                 Console.WriteLine(clone);
         }
 
         internal static void
         PrintAttachments(int revitYear = 0) {
-            PyRevitCLICommands.PrintHeader("Attachments");
+            PyRevitCLIAppCmds.PrintHeader("Attachments");
             foreach (var attachment in PyRevit.GetAttachments().OrderByDescending(x => x.Product.Version)) {
                 if (attachment.Clone != null && attachment.Engine != null) {
                     if (revitYear == 0)
@@ -70,7 +70,7 @@ namespace pyRevitManager {
         PrintCloneInfo(string cloneName) {
             PyRevitClone clone = PyRevit.GetRegisteredClone(cloneName);
             if (clone != null) {
-                PyRevitCLICommands.PrintHeader("Clone info");
+                PyRevitCLIAppCmds.PrintHeader("Clone info");
                 Console.WriteLine(clone);
             }
         }
@@ -133,7 +133,7 @@ namespace pyRevitManager {
                         }
                     }
                     else
-                        PyRevitCLICommands.ReportCloneAsNoGit(clone);
+                        PyRevitCLIAppCmds.ReportCloneAsNoGit(clone);
                 }
             }
         }
@@ -182,7 +182,7 @@ namespace pyRevitManager {
                         }
                     }
                     else
-                        PyRevitCLICommands.ReportCloneAsNoGit(clone);
+                        PyRevitCLIAppCmds.ReportCloneAsNoGit(clone);
                 }
             }
         }
@@ -204,7 +204,7 @@ namespace pyRevitManager {
                         }
                     }
                     else
-                        PyRevitCLICommands.ReportCloneAsNoGit(clone);
+                        PyRevitCLIAppCmds.ReportCloneAsNoGit(clone);
                 }
             }
         }
@@ -214,7 +214,7 @@ namespace pyRevitManager {
             if (cloneName != null) {
                 var clone = PyRevit.GetRegisteredClone(cloneName);
                 if (clone != null) {
-                    PyRevitCLICommands.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
+                    PyRevitCLIAppCmds.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
                     foreach (var dep in clone.GetConfiguredDeployments()) {
                         Console.WriteLine(string.Format("\"{0}\" deploys:", dep.Name));
                         foreach (var path in dep.Paths)
@@ -230,7 +230,7 @@ namespace pyRevitManager {
             if (cloneName != null) {
                 var clone = PyRevit.GetRegisteredClone(cloneName);
                 if (clone != null) {
-                    PyRevitCLICommands.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
+                    PyRevitCLIAppCmds.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
                     foreach (var engine in clone.GetConfiguredEngines()) {
                         Console.WriteLine(engine);
                     }
@@ -251,7 +251,7 @@ namespace pyRevitManager {
             // all clones
             if (allClones) {
                 foreach (var clone in PyRevit.GetRegisteredClones())
-                    if (PyRevitCLICommands.IsRunningInsideClone(clone))
+                    if (PyRevitCLIAppCmds.IsRunningInsideClone(clone))
                         myClone = clone;
                     else
                         targetClones.Add(clone);
@@ -260,7 +260,7 @@ namespace pyRevitManager {
             else {
                 if (cloneName != null) {
                     var clone = PyRevit.GetRegisteredClone(cloneName);
-                    if (PyRevitCLICommands.IsRunningInsideClone(clone))
+                    if (PyRevitCLIAppCmds.IsRunningInsideClone(clone))
                         myClone = clone;
                     else
                         targetClones.Add(clone);
@@ -275,7 +275,7 @@ namespace pyRevitManager {
 
             // now update myClone if any, as last step
             if (myClone != null)
-                PyRevitCLICommands.UpdateFromOutsideAndClose(myClone);
+                PyRevitCLIAppCmds.UpdateFromOutsideAndClose(myClone);
 
         }
 

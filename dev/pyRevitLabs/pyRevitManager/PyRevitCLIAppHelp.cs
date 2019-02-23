@@ -9,7 +9,7 @@ using pyRevitManager.Properties;
 using pyRevitLabs.Common.Extensions;
 
 namespace pyRevitManager {
-    internal class PyRevitCLICommandsHelp {
+    internal class PyRevitCLIAppHelp {
         // help strings
         internal static string UsagePatterns => Resources.UsagePatterns;
         private static string PrettyHelp => Resources.PrettyHelp;

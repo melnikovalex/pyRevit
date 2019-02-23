@@ -20,18 +20,18 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLIRevitCmd {
+    internal static class PyRevitCLIRevitCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         internal static void
         PrintRevits(bool running = false) {
             if (running) {
-                PyRevitCLICommands.PrintHeader("Running Revit Instances");
+                PyRevitCLIAppCmds.PrintHeader("Running Revit Instances");
                 foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version))
                     Console.WriteLine(revit);
             }
             else {
-                PyRevitCLICommands.PrintHeader("Installed Revits");
+                PyRevitCLIAppCmds.PrintHeader("Installed Revits");
                 foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version))
                     Console.WriteLine(revit);
             }

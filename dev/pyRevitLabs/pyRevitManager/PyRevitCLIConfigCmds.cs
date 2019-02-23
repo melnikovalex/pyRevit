@@ -20,7 +20,7 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLIConfigsCmd {
+    internal static class PyRevitCLIConfigCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
     }
