@@ -3,21 +3,14 @@ Usage:
     pyrevit (-h | --help)
     pyrevit (-V | --version)
     pyrevit (blog | docs | source | youtube | support)
-    pyrevit releases --help
-    pyrevit releases [--notes]
-    pyrevit releases latest [--pre] [--notes]
-    pyrevit releases <search_pattern> [--notes]
-    pyrevit releases open latest [--pre]
-    pyrevit releases open <search_pattern>
-    pyrevit releases download (installer | archive) latest --dest=<dest_path> [--pre]
-    pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
     pyrevit env [--json] [--help] [--log=<log_file>]
     pyrevit clone --help
     pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--source=<archive_url>] [--branch=<branch_name>] [--log=<log_file>]
     pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit clone <clone_name> --image=<image_path> [--dest=<dest_path>] [--log=<log_file>]
     pyrevit clones [--help]
     pyrevit clones (info | open) <clone_name>
-    pyrevit clones add <clone_name> <clone_path> [--log=<log_file>]
+    pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
     pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
     pyrevit clones rename <clone_name> <clone_new_name> [--log=<log_file>]
     pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
@@ -53,6 +46,17 @@ Usage:
     pyrevit extensions sources forget --all [--log=<log_file>]
     pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
     pyrevit extensions update (--all | <extension_name>) [--log=<log_file>]
+    pyrevit releases --help
+    pyrevit releases [--pre] [--notes]
+    pyrevit releases latest [--pre] [--notes]
+    pyrevit releases <search_pattern> [--pre] [--notes]
+    pyrevit releases open latest [--pre] [--notes]
+    pyrevit releases open <search_pattern> [--pre] [--notes]
+	pyrevit image <clone_name> --config=<image_config> [--dest=<dest_path>]
+	pyrevit images [--help]
+    pyrevit images download latest [--dest=<dest_path>] [--pre]
+    pyrevit images download <search_pattern> [--dest=<dest_path>] [--pre]
+	pyrevit images delete <image_id>
     pyrevit revits --help
     pyrevit revits [--installed] [--log=<log_file>]
     pyrevit revits killall [<revit_year>] [--log=<log_file>]

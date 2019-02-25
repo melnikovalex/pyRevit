@@ -23,5 +23,9 @@ namespace pyRevitManager {
     internal static class PyRevitCLIConfigCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
+        internal static void
+        SeedConfigs(string templateConfigFilePath) {
+            PyRevit.SeedConfig(setupFromTemplate: templateConfigFilePath);
+        }
     }
 }

@@ -20,7 +20,7 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal static class PyRevitCLICloneCmds {
+    internal class PyRevitCLICloneCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         internal static void
@@ -54,7 +54,8 @@ namespace pyRevitManager {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string source, string destPath) {
+        CreateClone(string cloneName, string deployName, string branchName, string source, string imageName, string destPath) {
+            // FIXME: implement image
             if (cloneName != null) {
                 PyRevit.Clone(
                     cloneName,

@@ -34,6 +34,8 @@ namespace pyRevitManager {
         Switch,
         Extend,
         Extensions,
+        Image,
+        Images,
         Revits,
         Run,
         Init,
@@ -44,14 +46,14 @@ namespace pyRevitManager {
     }
 
     internal static class PyRevitCLIAppCmds {
-        static Logger logger = LogManager.GetCurrentClassLogger();
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        // private consts:
-        internal const string updaterBinaryName = "pyrevit-updater";
-        internal const string autocompleteBinaryName = "pyrevit-complete";
-        internal const string shortcutIconName = "pyRevit.ico";
+        // consts:
+        private const string updaterBinaryName = "pyrevit-updater";
+        private const string autocompleteBinaryName = "pyrevit-complete";
+        private const string shortcutIconName = "pyRevit.ico";
 
-        // privates:
+        // internal helpers:
         internal static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         internal static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
 
@@ -97,49 +99,9 @@ namespace pyRevitManager {
             Environment.Exit(0);
         }
 
-        // internals:
-        // print version and check for latest
-        internal static void
-        PrintVersion() {
-            Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIVersion.ToString()));
-            if (CommonUtils.CheckInternetConnection()) {
-                var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
-                if (latestVersion != null) {
-                    logger.Debug("Latest release: {0}", latestVersion);
-                    if (PyRevitCLI.CLIVersion < latestVersion) {
-                        Console.WriteLine(
-                            string.Format(
-                                "Newer v{0} is available.\nGo to {1} to download the installer.",
-                                latestVersion,
-                                PyRevitConsts.ReleasesUrl)
-                            );
-                    }
-                    else
-                        Console.WriteLine("You have the latest version.");
-                }
-                else
-                    logger.Debug("Failed getting latest release list OR no CLI releases.");
-            }
-        }
-
-        // open external help page
-        internal static void
-        OpenHelp() {
-            string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
-            if (CommonUtils.VerifyUrl(helpUrl)) {
-                CommonUtils.OpenUrl(
-                    helpUrl,
-                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
-            }
-            else
-                throw new pyRevitException(
-                    string.Format("Help page is not reachable for version {0}", PyRevitCLI.CLIVersion.ToString())
-                    );
-        }
-
-        internal static void
-        PrintEnvJson() {
+        // env commands
+        internal static string
+        CreateEnvJson() {
             // collecet search paths
             var searchPaths = new List<string>() { PyRevit.pyRevitDefaultExtensionsPath };
             searchPaths.AddRange(PyRevit.GetRegisteredExtensionSearchPaths());
@@ -176,28 +138,31 @@ namespace pyRevitManager {
                         },
                     };
 
-            Console.WriteLine(
-                JsonConvert.SerializeObject(
-                    jsonData,
-                    new JsonSerializerSettings {
-                        Error = delegate (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) {
-                            args.ErrorContext.Handled = true;
-                        },
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    })
-                );
+            return JsonConvert.SerializeObject(
+                        jsonData,
+                        new JsonSerializerSettings {
+                            Error = delegate (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) {
+                                args.ErrorContext.Handled = true;
+                            },
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        })
+                    );
         }
 
         internal static void
-        PrintEnvReport() {
-            PyRevitCLICloneCmds.PrintClones();
-            PyRevitCLICloneCmds.PrintAttachments();
-            PyRevitCLIExtensionCmds.PrintExtensions();
-            PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
-            PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
-            PyRevitCLIRevitCmds.PrintRevits();
-            PyRevitCLIRevitCmds.PrintRevits(running: true);
-            PrinUserEnv();
+        MakeEnvReport(bool json) {
+            if (json)
+                Console.WriteLine(CreateEnvJson());
+            else {
+                PyRevitCLICloneCmds.PrintClones();
+                PyRevitCLICloneCmds.PrintAttachments();
+                PyRevitCLIExtensionCmds.PrintExtensions();
+                PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
+                PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
+                PyRevitCLIRevitCmds.PrintRevits();
+                PyRevitCLIRevitCmds.PrintRevits(running: true);
+                PrinUserEnv();
+            }
         }
 
         internal static void
@@ -239,6 +204,30 @@ namespace pyRevitManager {
             }
 
             Console.WriteLine(string.Format("pyRevit CLI {0}", PyRevitCLI.CLIVersion.ToString()));
+        }
+
+        // cli specific commands
+        internal static void
+        PrintVersion() {
+            Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIVersion.ToString()));
+            if (CommonUtils.CheckInternetConnection()) {
+                var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
+                if (latestVersion != null) {
+                    logger.Debug("Latest release: {0}", latestVersion);
+                    if (PyRevitCLI.CLIVersion < latestVersion) {
+                        Console.WriteLine(
+                            string.Format(
+                                "Newer v{0} is available.\nGo to {1} to download the installer.",
+                                latestVersion,
+                                PyRevitConsts.ReleasesUrl)
+                            );
+                    }
+                    else
+                        Console.WriteLine("You have the latest version.");
+                }
+                else
+                    logger.Debug("Failed getting latest release list OR no CLI releases.");
+            }
         }
 
         internal static void

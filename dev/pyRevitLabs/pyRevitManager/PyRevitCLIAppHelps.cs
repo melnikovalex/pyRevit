@@ -6,15 +6,31 @@ using System.Threading.Tasks;
 
 using pyRevitManager.Properties;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitManager {
-    internal class PyRevitCLIAppHelp {
+    internal class PyRevitCLIAppHelps {
         // help strings
         internal static string UsagePatterns => Resources.UsagePatterns;
         private static string PrettyHelp => Resources.PrettyHelp;
 
-        internal static void PrintCommandHelpAndExit(PyRevitCLICommandType commandType) {
+        internal static void OpenHelp() {
+            string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
+            if (CommonUtils.VerifyUrl(helpUrl)) {
+                CommonUtils.OpenUrl(
+                    helpUrl,
+                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
+                    );
+            }
+            else
+                throw new pyRevitException(
+                    string.Format("Help page is not reachable for version {0}", PyRevitCLI.CLIVersion.ToString())
+                    );
+        }
+
+        internal static void PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
                 
                 case PyRevitCLICommandType.Main:
@@ -22,14 +38,14 @@ namespace pyRevitManager {
                     break;
                 
                 case PyRevitCLICommandType.Help:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "help" },
                         title: "Open help in default browser"
                         );
                     break;
 
                 case PyRevitCLICommandType.Releases:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "releases" },
                         title: "Info on pyRevit Releases",
                         commands: new Dictionary<string, string>() {
@@ -47,7 +63,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Env:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "env" },
                         title: "Print environment information.",
                         options: new Dictionary<string, string>() {
@@ -56,7 +72,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Clone:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "clone" },
                         title: "Create a clone of pyRevit on this machine",
                         options: new Dictionary<string, string>() {
@@ -70,7 +86,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Clones:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "clones" },
                         title: "Manage pyRevit clones",
                         commands: new Dictionary<string, string>() {
@@ -104,7 +120,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Attach:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "attach" },
                         title: "Attach pyRevit clone to installed Revit",
                         options: new Dictionary<string, string>() {
@@ -120,7 +136,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Detach:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "detach" },
                         title: "Detach a clone from Revit.",
                         options: new Dictionary<string, string>() {
@@ -131,7 +147,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Attached:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "attached" },
                         title: "List all attached clones.",
                         options: new Dictionary<string, string>() {
@@ -141,7 +157,7 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Switch:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "switch" },
                         title: "Quick switch clone of an existing attachment to another.",
                         options: new Dictionary<string, string>() {
@@ -152,30 +168,51 @@ namespace pyRevitManager {
                     break;
 
                 case PyRevitCLICommandType.Extend:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "extend" },
                         title: "Create a clone of a third-party pyRevit extension on this machine"
                     );
                     break;
 
                 case PyRevitCLICommandType.Extensions:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "extensions" },
                         title: "Manage pyRevit extensions"
                     );
                     break;
 
                 case PyRevitCLICommandType.Revits:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "revits" },
                         title: "Manage installed and running Revits"
                     );
                     break;
 
+                case PyRevitCLICommandType.Config:
+                    BuildHelp(
+                        new List<string>() { "config" },
+                        title: "Configure pyRevit for current user"
+                    );
+                    break;
+
+                case PyRevitCLICommandType.Configs:
+                    BuildHelp(
+                        new List<string>() { "configs" },
+                        title: "Manage pyRevit configurations"
+                    );
+                    break;
+
                 case PyRevitCLICommandType.Cli:
-                    GenerateHelpFromUsagePatterns(
+                    BuildHelp(
                         new List<string>() { "cli" },
                         title: "Manage this utility"
+                    );
+                    break;
+
+                case PyRevitCLICommandType.Run:
+                    BuildHelp(
+                        new List<string>() { "run" },
+                        title: "Run python script in Revit"
                     );
                     break;
 
@@ -185,10 +222,10 @@ namespace pyRevitManager {
             Environment.Exit(0);
         }
 
-        private static void GenerateHelpFromUsagePatterns(IEnumerable<string> docoptKeywords,
-                                                string title,
-                                                IDictionary<string, string> commands = null,
-                                                IDictionary<string, string> options = null) {
+        private static void BuildHelp(IEnumerable<string> docoptKeywords,
+                                      string title,
+                                      IDictionary<string, string> commands = null,
+                                      IDictionary<string, string> options = null) {
             // build a help guide for a subcommand based on doctop usage entries
             Console.WriteLine(title + Environment.NewLine);
             foreach (var hline in UsagePatterns.GetLines())
