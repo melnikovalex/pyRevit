@@ -3,21 +3,14 @@ Usage:
     pyrevit (-h | --help)
     pyrevit (-V | --version)
     pyrevit (blog | docs | source | youtube | support)
-    pyrevit releases --help
-    pyrevit releases [--notes]
-    pyrevit releases latest [--pre] [--notes]
-    pyrevit releases <search_pattern> [--notes]
-    pyrevit releases open latest [--pre]
-    pyrevit releases open <search_pattern>
-    pyrevit releases download (installer | archive) latest --dest=<dest_path> [--pre]
-    pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
     pyrevit env [--json] [--help] [--log=<log_file>]
     pyrevit clone --help
     pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--source=<archive_url>] [--branch=<branch_name>] [--log=<log_file>]
     pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit clone <clone_name> --image=<image_path> [--dest=<dest_path>] [--log=<log_file>]
     pyrevit clones [--help]
     pyrevit clones (info | open) <clone_name>
-    pyrevit clones add <clone_name> <clone_path> [--log=<log_file>]
+    pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
     pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
     pyrevit clones rename <clone_name> <clone_new_name> [--log=<log_file>]
     pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
@@ -45,28 +38,38 @@ Usage:
     pyrevit extensions delete <extension_name> [--log=<log_file>]
     pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
     pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
-    pyrevit extensions paths
+    pyrevit extensions paths [--help]
     pyrevit extensions paths forget --all [--log=<log_file>]
     pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
     pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
-    pyrevit extensions sources
+    pyrevit extensions sources [--help]
     pyrevit extensions sources forget --all [--log=<log_file>]
     pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
     pyrevit extensions update (--all | <extension_name>) [--log=<log_file>]
+    pyrevit releases --help
+    pyrevit releases [--pre] [--notes]
+    pyrevit releases latest [--pre] [--notes]
+    pyrevit releases <search_pattern> [--pre] [--notes]
+    pyrevit releases open latest [--pre]
+    pyrevit releases open <search_pattern> [--pre]
+    pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
+	pyrevit image <clone_name> --config=<image_config> [--dest=<dest_path>]
+	pyrevit images [--help]
+	pyrevit images delete <image_id>
     pyrevit revits --help
     pyrevit revits [--installed] [--log=<log_file>]
     pyrevit revits killall [<revit_year>] [--log=<log_file>]
     pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>]
-    pyrevit revits addons
+    pyrevit revits addons [--help]
     pyrevit revits addons prepare <revit_year> [--allusers]
-    pyrevit revits addons install <addon_name> <dest_path> [--allusers]
+    pyrevit revits addons install <addon_name> [--dest=<dest_path>] [--allusers]
     pyrevit revits addons uninstall <addon_name>
     pyrevit run --help
-    pyrevit run <script_file_or_command_name> [--revit=<revit_year>] [--purge]
-    pyrevit run <script_file_or_command_name> <model_file> [--revit=<revit_year>] [--purge]
+    pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge]
+    pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge]
     pyrevit init --help
-    pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<templates_path>]
-    pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
+    pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<temps_path>]
+    pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
     pyrevit caches --help
     pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
     pyrevit config --help
@@ -90,5 +93,5 @@ Usage:
     pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
     pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit cli --help
-    pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
+    pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<description>] [--allusers]
     pyrevit cli installautocomplete

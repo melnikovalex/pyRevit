@@ -90,18 +90,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PyRevitCLI.cs" />
-    <Compile Include="PyRevitCLICommands.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="PyRevitCLIAppHelps.cs" />
+    <Compile Include="PyRevitCLIAppCmds.cs" />
+    <Compile Include="PyRevitCLIRevitCmds.cs" />
+    <Compile Include="PyRevitCLLInitCmds.cs" />
+    <Compile Include="PyRevitCLIReleaseCmds.cs" />
+    <Compile Include="PyRevitCLICloneCmds.cs" />
+    <Compile Include="PyRevitCLIConfigCmds.cs" />
+    <Compile Include="PyRevitCLIExtensionCmds.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <None Include="Resources\pyrevit.yaml" />
     <None Include="pyrevit-complete.go" />
     <None Include="pyrevit.manifest">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -117,7 +123,6 @@
     <Content Include="pyRevit.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\PrettyHelp.txt" />
     <None Include="Resources\UsagePatterns.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -169,9 +174,6 @@
     </PackageReference>
     <PackageReference Include="NLog">
       <Version>4.5.11</Version>
-    </PackageReference>
-    <PackageReference Include="YamlDotNet">
-      <Version>5.4.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

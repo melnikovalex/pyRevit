@@ -14,6 +14,12 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace pyRevitLabs.TargetApps.Revit {
+    public enum PyRevitReleaseAssetType {
+        Unknown,
+        Archive,
+        Installer
+    }
+
     public class PyRevitRelease {
         // private logger and data
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -79,15 +85,15 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public static PyRevitRelease GetLatestRelease(bool includePreRelease = false) {
             if (includePreRelease)
-                return GetLatestReleases().Where(r => r.IsPyRevitRelease)
+                return GetReleases().Where(r => r.IsPyRevitRelease)
                                           .OrderByDescending(r => r.Version).ToList().First();
             else
-                return GetLatestReleases().Where(r => r.IsPyRevitRelease && !r.PreRelease)
+                return GetReleases().Where(r => r.IsPyRevitRelease && !r.PreRelease)
                                           .OrderByDescending(r => r.Version).ToList().First();
         }
 
-        // Find latest releases
-        public static List<PyRevitRelease> GetLatestReleases() {
+        // Find releases
+        public static List<PyRevitRelease> GetReleases() {
             // make github api call and get a list of releases
             // https://developer.github.com/v3/repos/releases/
             HttpWebRequest request = CommonUtils.GetHttpWebRequest(PyRevitConsts.APIReleasesUrl);
@@ -102,18 +108,22 @@ namespace pyRevitLabs.TargetApps.Revit {
             return releases.OrderByDescending(r => r.CreatedTimeStamp).ToList();
         }
 
+        public static List<PyRevitRelease> FindReleases(string searchPattern, bool includePreRelease = false) {
+            return GetReleases().Where(r => r.IsPyRevitRelease && (r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern))).ToList();
+        }
+
         // find latest release version
         public static Version GetLatestPyRevitReleaseVersion() {
             // pick the latest release and return
             // could be null
-            return GetLatestReleases().Where(r => r.IsPyRevitRelease).Select(r => r.Version).Max();
+            return GetReleases().Where(r => r.IsPyRevitRelease).Select(r => r.Version).Max();
         }
 
         // find latest cli release version
         public static Version GetLatestCLIReleaseVersion() {
             // pick the latest release and return
             // could be null
-            return GetLatestReleases().Where(r => r.IsCLIRelease).Select(r => r.Version).Max();
+            return GetReleases().Where(r => r.IsCLIRelease).Select(r => r.Version).Max();
         }
     }
 

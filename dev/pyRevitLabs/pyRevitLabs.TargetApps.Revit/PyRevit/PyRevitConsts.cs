@@ -8,6 +8,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public static class PyRevitConsts {
+        public const string ProductName = "pyRevit";
+
         // consts for the official pyRevit repo
         public const string OriginalRepoPath =
             @"https://github.com/eirannejad/pyRevit.git";
