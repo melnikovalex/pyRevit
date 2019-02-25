@@ -58,7 +58,6 @@ namespace pyRevitManager {
                 Console.WriteLine(extLookupSrc);
         }
 
-
         internal static void
         Extend(string extName, string destPath, string branchName) {
             var ext = PyRevit.FindRegisteredExtension(extName);

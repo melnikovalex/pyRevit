@@ -61,43 +61,16 @@ namespace pyRevitManager.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Usage: pyrevit [OPTIONS] COMMAND
-        ///
-        ///pyRevit environment and clones manager
-        ///
-        ///Options:
-        ///    -h --help       Show this help
-        ///    -V --version    Show version
-        ///    --verbose       Print info messages
-        ///    --debug         Print docopt options and logger debug messages
-        ///    --log           Output log messages to external log file   
-        ///
-        ///Management Commands:
-        ///    env             Print environment information
-        ///    releases        Info about pyRevit releases
-        ///    clones          Manage pyRevit clones
-        ///    extension [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string PrettyHelp {
-            get {
-                return ResourceManager.GetString("PrettyHelp", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Usage:
         ///    pyrevit help
         ///    pyrevit (-h | --help)
         ///    pyrevit (-V | --version)
         ///    pyrevit (blog | docs | source | youtube | support)
-        ///    pyrevit releases --help
-        ///    pyrevit releases [--notes]
-        ///    pyrevit releases latest [--pre] [--notes]
-        ///    pyrevit releases &lt;search_pattern&gt; [--notes]
-        ///    pyrevit releases open latest [--pre]
-        ///    pyrevit releases open &lt;search_pattern&gt;
-        ///    pyrevit releases download (installer | archive) latest --dest=&lt;dest_path&gt; [--pre]
-        ///    pyrevit releases download (installer |  [rest of string was truncated]&quot;;.
+        ///    pyrevit env [--json] [--help] [--log=&lt;log_file&gt;]
+        ///    pyrevit clone --help
+        ///    pyrevit clone &lt;clone_name&gt; &lt;deployment_name&gt; [--dest=&lt;dest_path&gt;] [--source=&lt;archive_url&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
+        ///    pyrevit clone &lt;clone_name&gt; [--dest=&lt;dest_path&gt;] [--source=&lt;repo_url&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
+        ///	pyrevit clone &lt;clone_name&gt; --imag [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string UsagePatterns {
             get {

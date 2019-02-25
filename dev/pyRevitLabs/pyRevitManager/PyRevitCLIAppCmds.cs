@@ -27,10 +27,12 @@ namespace pyRevitManager {
         private const string updaterBinaryName = "pyrevit-updater";
         private const string autocompleteBinaryName = "pyrevit-complete";
         private const string shortcutIconName = "pyRevit.ico";
+        private const string templatesDirName = "templates";
 
         // internal helpers:
         internal static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         internal static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
+        internal static string GetTemplatesPath() => Path.Combine(GetProcessPath(), templatesDirName);
 
         internal static void PrintHeader(string header) =>
             Console.WriteLine(string.Format("==> {0}", header), Color.Green);
@@ -72,6 +74,17 @@ namespace pyRevitManager {
             Process.Start(updaterProcessInfo);
             // and exit self
             Environment.Exit(0);
+        }
+
+        internal static void
+        ClearCaches(bool allCaches, string revitYear) {
+            if (allCaches)
+                PyRevit.ClearAllCaches();
+            else {
+                int revitYearNumber = 0;
+                if (int.TryParse(revitYear, out revitYearNumber))
+                    PyRevit.ClearCache(revitYearNumber);
+            }
         }
 
         // env commands
@@ -120,8 +133,7 @@ namespace pyRevitManager {
                                 args.ErrorContext.Handled = true;
                             },
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
-                        })
-                    );
+                        });
         }
 
         internal static void
