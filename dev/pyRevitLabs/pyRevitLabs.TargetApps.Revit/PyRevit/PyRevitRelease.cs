@@ -72,7 +72,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             get { return PyRevitConsts.GetTagArchiveUrl(Tag); }
         }
 
-        // Extract archive download url from assets.browser_download_url
+        // Extract installer download url from assets.browser_download_url
         public string InstallerUrl {
             get {
                 if (assets != null && assets.Count > 0) {

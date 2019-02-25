@@ -39,7 +39,7 @@ namespace pyRevitManager {
             if (extensionName != null) {
                 var pwd = Directory.GetCurrentDirectory();
 
-                if (CommonUtils.ConfirmFileNameIsUnique(pwd, extensionName)) {
+                if (CommonUtils.EnsureFileNameIsUnique(pwd, extensionName)) {
                     var extDir = Path.Combine(
                         pwd,
                         string.Format("{0}{1}", extensionName, extDirPostfix)
@@ -99,7 +99,7 @@ namespace pyRevitManager {
                 if (bundleName != null) {
                     var pwd = Directory.GetCurrentDirectory();
 
-                    if (CommonUtils.ConfirmFileNameIsUnique(pwd, bundleName)) {
+                    if (CommonUtils.EnsureFileNameIsUnique(pwd, bundleName)) {
                         var bundleDir = Path.Combine(
                             pwd,
                             string.Format("{0}{1}", bundleName, PyRevitBundle.GetBundleDirExt(bundleType))

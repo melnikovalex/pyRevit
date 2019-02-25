@@ -202,8 +202,8 @@ namespace pyRevitManager {
                         cloneName: TryGetValue("<clone_name>"),
                         deployName: TryGetValue("<deployment_name>"),
                         branchName: TryGetValue("--branch"),
-                        source: TryGetValue("--source"),
-                        imageName: TryGetValue("--image"),
+                        repoUrl: TryGetValue("--source"),
+                        imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest")
                     );
             }

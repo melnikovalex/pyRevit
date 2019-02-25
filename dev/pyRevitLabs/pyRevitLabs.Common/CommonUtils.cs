@@ -29,7 +29,6 @@ namespace pyRevitLabs.Common {
             return VerifyFile(path) && path.ToLower().EndsWith(".py");
         }
 
-
         // helper for deleting directories recursively
         // @handled @logs
         public static void DeleteDirectory(string targetDir, bool verbose = true) {
@@ -61,7 +60,7 @@ namespace pyRevitLabs.Common {
         // helper for copying a directory recursively
         // @handled @logs
         public static void CopyDirectory(string sourceDir, string destDir) {
-            ConfirmPath(destDir);
+            EnsurePath(destDir);
             logger.Debug("Copying \"{0}\" to \"{1}\"", sourceDir, destDir);
             try {
                 // create all of the directories
@@ -81,19 +80,19 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static void ConfirmPath(string path) {
+        public static void EnsurePath(string path) {
             Directory.CreateDirectory(path);
         }
 
-        public static void ConfirmFile(string filepath) {
-            ConfirmPath(Path.GetDirectoryName(filepath));
+        public static void EnsureFile(string filepath) {
+            EnsurePath(Path.GetDirectoryName(filepath));
             if (!System.IO.File.Exists(filepath)) {
                 var file = System.IO.File.CreateText(filepath);
                 file.Close();
             }
         }
 
-        public static bool ConfirmFileNameIsUnique(string targetDir, string fileName) {
+        public static bool EnsureFileNameIsUnique(string targetDir, string fileName) {
             foreach (var subdir in Directory.GetDirectories(targetDir))
                 if (Path.GetFileNameWithoutExtension(subdir).ToLower() == fileName.ToLower())
                     return false;
@@ -245,7 +244,7 @@ namespace pyRevitLabs.Common {
                 );
             string appStartMenuPath = Path.Combine(commonStartMenuPath, "Programs", appName);
 
-            ConfirmPath(appStartMenuPath);
+            EnsurePath(appStartMenuPath);
 
             string shortcutLocation = Path.Combine(appStartMenuPath, shortCutName + ".lnk");
             WshShell shell = new WshShell();

@@ -11,12 +11,17 @@ namespace pyRevitManager {
         internal static void
         OpenHelp() {
             string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
-            if (CommonUtils.VerifyUrl(helpUrl)) {
+            if (CommonUtils.VerifyUrl(helpUrl))
                 CommonUtils.OpenUrl(
                     helpUrl,
                     logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
-            }
+
+            else if (CommonUtils.VerifyUrl(helpUrl))
+                CommonUtils.OpenUrl(
+                    PyRevitConsts.CLIHelpUrlDev,
+                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
+                    );
             else
                 throw new pyRevitException(
                     string.Format("Help page is not reachable for version {0}", PyRevitCLI.CLIVersion.ToString())
@@ -91,7 +96,7 @@ namespace pyRevitManager {
                             { "<clone_name>",           "Name of this new clone" },
                             { "<deployment_name>",      "Deployment configuration to deploy from" },
                             { "--dest=<dest_path>",     "Clone destination directory" },
-                            { "--source=<archive_url>", "Clone source Zip archive url or path" },
+                            { "--source=<image_url>",   "Clone source image url or path" },
                             { "--source=<repo_url>",    "Clone source git repo url" },
                             { "--image=<image_path>",   "Clone from a custom image" },
                             { "--branch=<branch_name>", "Branch to clone from" },

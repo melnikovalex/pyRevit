@@ -60,18 +60,6 @@ namespace pyRevitManager.Properties {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Usage:
-        ///    pyrevit help
-        ///    pyrevit (-h | --help)
-        ///    pyrevit (-V | --version)
-        ///    pyrevit (blog | docs | source | youtube | support)
-        ///    pyrevit env [--json] [--help] [--log=&lt;log_file&gt;]
-        ///    pyrevit clone --help
-        ///    pyrevit clone &lt;clone_name&gt; &lt;deployment_name&gt; [--dest=&lt;dest_path&gt;] [--source=&lt;archive_url&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
-        ///    pyrevit clone &lt;clone_name&gt; [--dest=&lt;dest_path&gt;] [--source=&lt;repo_url&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
-        ///	pyrevit clone &lt;clone_name&gt; --imag [rest of string was truncated]&quot;;.
-        /// </summary>
         internal static string UsagePatterns {
             get {
                 return ResourceManager.GetString("UsagePatterns", resourceCulture);

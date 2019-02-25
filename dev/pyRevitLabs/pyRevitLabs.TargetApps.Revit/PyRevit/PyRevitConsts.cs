@@ -15,8 +15,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             @"https://github.com/eirannejad/pyRevit.git";
 
         public const string OriginalZipInternalBranchPath = @"{0}-{1}";
-        public const string OriginalZipPath =
-            @"https://github.com/eirannejad/pyRevit/archive/{0}.zip";
+        public const string ImageFileExtension = ".zip";
+        public const string OriginalImageUrl =
+            @"https://github.com/eirannejad/pyRevit/archive/{0}" + ImageFileExtension;
 
         public static string ExtensionsDefinitionFileUri =
             string.Format(
@@ -33,7 +34,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ReleasesUrl = @"https://github.com/eirannejad/pyRevit/releases";
 
         // cli
-        public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/README_CLI.md";
+        public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";
+        public const string CLIHelpUrlDev = @"https://github.com/eirannejad/pyRevit/blob/develop/docs/cli.md";
 
         // api
         public const string ReleasePrefix = "v";
@@ -73,8 +75,8 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public const string PyRevitfileFilename = "PyRevitfile";
 
-        // archive clones
-        public const string DeployFromArchiveConfigsFilename = ".pyrevitargs";
+        // image clones
+        public const string DeployFromImageConfigsFilename = ".pyrevitargs";
 
         // consts for creating pyRevit addon manifest file
         public const string AddinFileName = "pyRevit";
@@ -145,11 +147,11 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // methods
         public static string GetBranchArchiveUrl(string branchName) {
-            return string.Format(OriginalZipPath, branchName);
+            return string.Format(OriginalImageUrl, branchName);
         }
 
         public static string GetTagArchiveUrl(string tagName) {
-            return string.Format(OriginalZipPath, tagName);
+            return string.Format(OriginalImageUrl, tagName);
         }
 
         public static string GetZipPackageInternalBranchPath(string branchName) {

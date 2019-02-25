@@ -75,7 +75,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             else
                 addinFile = Path.Combine(addinPath, addinFileName);
             logger.Debug("Creating manifest file \"{0}\"", addinFile);
-            CommonUtils.ConfirmFile(addinFile);
+            CommonUtils.EnsureFile(addinFile);
             var f = File.CreateText(addinFile);
             f.Write(manifest);
             f.Close();
@@ -139,7 +139,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public static string PrepareAddonPath(int revitYear, bool allUsers) {
             var addonPath = GetRevitAddonsFolder(revitYear, allUsers: allUsers);
-            CommonUtils.ConfirmPath(addonPath);
+            CommonUtils.EnsurePath(addonPath);
             logger.Debug("Prepared: {0}", addonPath);
             return addonPath;
         }

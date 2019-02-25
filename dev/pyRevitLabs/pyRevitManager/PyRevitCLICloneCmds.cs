@@ -30,7 +30,7 @@ namespace pyRevitManager {
             foreach (var clone in clones.Where(c => c.IsRepoDeploy))
                 Console.WriteLine(clone);
 
-            PyRevitCLIAppCmds.PrintHeader("Registered Clones (deployed from archive)");
+            PyRevitCLIAppCmds.PrintHeader("Registered Clones (deployed from archive/image)");
             foreach (var clone in clones.Where(c => !c.IsRepoDeploy))
                 Console.WriteLine(clone);
         }
@@ -54,16 +54,27 @@ namespace pyRevitManager {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string source, string imageName, string destPath) {
+        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath) {
             // FIXME: implement image
             if (cloneName != null) {
-                PyRevit.Clone(
-                    cloneName,
-                    deploymentName: deployName,
-                    branchName: branchName,
-                    repoOrArchivePath: source,
-                    destPath: destPath
-                    );
+                // if deployment requested or image path is provided
+                if (imagePath != null || deployName != null)
+                    PyRevit.DeployFromImage(
+                        cloneName,
+                        deploymentName: deployName,
+                        branchName: branchName,
+                        imagePath: imagePath,
+                        destPath: destPath
+                        );
+                // otherwise clone the full repo
+                else
+                    PyRevit.DeployFromRepo(
+                        cloneName,
+                        deploymentName: deployName,
+                        branchName: branchName,
+                        repoUrl: repoUrl,
+                        destPath: destPath
+                        );
             }
         }
 

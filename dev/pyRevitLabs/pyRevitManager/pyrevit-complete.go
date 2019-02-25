@@ -143,8 +143,18 @@ func main() {
 					},
 					"download": complete.Command{
 						Sub: complete.Commands{
-							"installer": complete.Command{},
-							"archive":   complete.Command{},
+							"installer": complete.Command{
+								Flags: complete.Flags{
+									"--dest=": complete.PredictAnything,
+									"--pre":   complete.PredictAnything,
+								},
+							},
+							"archive": complete.Command{
+								Flags: complete.Flags{
+									"--dest=": complete.PredictAnything,
+									"--pre":   complete.PredictAnything,
+								},
+							},
 						},
 					},
 				},

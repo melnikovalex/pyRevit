@@ -24,7 +24,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             ExecutionId = Guid.NewGuid().ToString();
             // setup working dir
             WorkingDirectory = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), ExecutionId);
-            CommonUtils.ConfirmPath(WorkingDirectory);
+            CommonUtils.EnsurePath(WorkingDirectory);
 
             // generate journal and manifest file
             GenerateJournal();
