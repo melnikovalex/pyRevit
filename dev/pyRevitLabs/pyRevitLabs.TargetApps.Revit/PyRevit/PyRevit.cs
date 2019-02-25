@@ -419,35 +419,6 @@ namespace pyRevitLabs.TargetApps.Revit {
                 Update(clone);
         }
 
-        // clear cache
-        // @handled @logs
-        public static void ClearCache(int revitYear) {
-            // make sure all revit instances are closed
-            if (CommonUtils.VerifyPath(pyRevitAppDataPath)) {
-                RevitController.KillRunningRevits(revitYear);
-                CommonUtils.DeleteDirectory(GetCacheDirectory(revitYear));
-            }
-            // it's just clearing caches. Let's not be paranoid and throw an exception is directory does not exist
-            // if it's not there, the clear cache request is technically already satisfied
-            //else
-            //    throw new pyRevitResourceMissingException(pyRevitAppDataPath);
-        }
-
-        // clear all caches
-        // @handled @logs
-        public static void ClearAllCaches() {
-            var cacheDirFinder = new Regex(@"\d\d\d\d");
-            if (CommonUtils.VerifyPath(pyRevitAppDataPath)) {
-                foreach (string subDir in Directory.GetDirectories(pyRevitAppDataPath)) {
-                    var dirName = Path.GetFileName(subDir);
-                    if (cacheDirFinder.IsMatch(dirName))
-                        ClearCache(int.Parse(dirName));
-                }
-            }
-            else
-                throw new pyRevitResourceMissingException(pyRevitAppDataPath);
-        }
-
         // managing attachments ======================================================================================
         // attach primary or given clone to revit version
         // @handled @logs
@@ -654,6 +625,73 @@ namespace pyRevitLabs.TargetApps.Revit {
                     return clone;
 
             throw new pyRevitException(string.Format("Can not find clone \"{0}\"", cloneNameOrRepoPath));
+        }
+
+        public static void CreateImageFromClone(PyRevitClone clone, IEnumerable<string> paths, string destPath) {
+            // create paths
+            var imagePath = CommonUtils.EnsureFileExtension(destPath, PyRevitConsts.ImageFileExtension);
+            var targetDir = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath));
+            CommonUtils.EnsurePath(targetDir);
+
+            // copy paths from clone to temp directory
+            foreach(var cloneItem in paths) {
+                var srcItem = Path.Combine(clone.ClonePath, cloneItem);
+                var destItem = Path.Combine(targetDir, cloneItem);
+                if (File.Exists(srcItem)) {
+                    // then copy and overwrite
+                    File.Copy(srcItem, destItem, overwrite: true);
+                }
+                // otherwise it must be a directory
+                else {
+                    // remove existing first
+                    if (CommonUtils.VerifyPath(destItem))
+                        CommonUtils.DeleteDirectory(destItem);
+
+                    // copy new
+                    CommonUtils.CopyDirectory(srcItem, destItem);
+                }
+            }
+            
+            // now create the image
+            ZipFile.CreateFromDirectory(
+                targetDir,
+                imagePath,
+                compressionLevel:CompressionLevel.Optimal,
+                includeBaseDirectory: true
+                );
+
+            // delete temp path
+            CommonUtils.DeleteDirectory(targetDir);
+        }
+
+        // runtime ===================================================================================================
+        // clear cache
+        // @handled @logs
+        public static void ClearCache(int revitYear) {
+            // make sure all revit instances are closed
+            if (CommonUtils.VerifyPath(pyRevitAppDataPath)) {
+                RevitController.KillRunningRevits(revitYear);
+                CommonUtils.DeleteDirectory(GetCacheDirectory(revitYear));
+            }
+            // it's just clearing caches. Let's not be paranoid and throw an exception is directory does not exist
+            // if it's not there, the clear cache request is technically already satisfied
+            //else
+            //    throw new pyRevitResourceMissingException(pyRevitAppDataPath);
+        }
+
+        // clear all caches
+        // @handled @logs
+        public static void ClearAllCaches() {
+            var cacheDirFinder = new Regex(@"\d\d\d\d");
+            if (CommonUtils.VerifyPath(pyRevitAppDataPath)) {
+                foreach (string subDir in Directory.GetDirectories(pyRevitAppDataPath)) {
+                    var dirName = Path.GetFileName(subDir);
+                    if (cacheDirFinder.IsMatch(dirName))
+                        ClearCache(int.Parse(dirName));
+                }
+            }
+            else
+                throw new pyRevitResourceMissingException(pyRevitAppDataPath);
         }
 
         // managing extensions =======================================================================================
@@ -997,35 +1035,6 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static void UnregisterAllExtensionLookupSources() {
             foreach (var src in GetRegisteredExtensionLookupSources())
                 UnregisterExtensionLookupSource(src);
-        }
-
-        // managing init templates ===================================================================================
-        public static void GetInitTemplate(PyRevitExtensionTypes extType) {
-
-        }
-
-        public static void GetInitTemplate(PyRevitBundleTypes extType) {
-
-        }
-
-        public static void InitExtension(PyRevitExtensionTypes extType, string destPath) {
-
-        }
-
-        public static void InitBundle(PyRevitBundleTypes bundleType, string destPath) {
-
-        }
-
-        public static void AddInitTemplatePath(string templatesPath) {
-
-        }
-
-        public static void RemoveInitTemplatePath(string templatesPath) {
-
-        }
-
-        public static List<string> GetInitTemplatePaths() {
-            return new List<string>();
         }
 
         // managing configs ==========================================================================================

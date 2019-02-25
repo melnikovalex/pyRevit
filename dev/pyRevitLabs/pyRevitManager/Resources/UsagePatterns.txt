@@ -53,9 +53,8 @@ Usage:
     pyrevit releases open latest [--pre]
     pyrevit releases open <search_pattern> [--pre]
     pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
-	pyrevit image <clone_name> --config=<image_config> [--dest=<dest_path>]
-	pyrevit images [--help]
-	pyrevit images delete <image_id>
+	pyrevit image --help
+	pyrevit image <clone_name> --config=<image_config> --dest=<dest_path>
     pyrevit revits --help
     pyrevit revits [--installed] [--log=<log_file>]
     pyrevit revits killall [<revit_year>] [--log=<log_file>]

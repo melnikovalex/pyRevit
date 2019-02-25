@@ -62,7 +62,6 @@ namespace pyRevitManager {
         ExtensionsSources,
         Releases,
         Image,
-        Images,
         Revits,
         RevitsAddons,
         Run,
@@ -467,14 +466,11 @@ namespace pyRevitManager {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Image);
                 else
-                    throw new NotImplementedException();
-            }
-
-            else if (all("images")) {
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Images);
-                else
-                    throw new NotImplementedException();
+                    PyRevitCLICloneCmds.BuildImage(
+                        cloneName: TryGetValue("<clone_name>"),
+                        configFile: TryGetValue("--config"),
+                        imageFilePath: TryGetValue("--dest")
+                        );
             }
 
             else if (all("revits")) {

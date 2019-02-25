@@ -170,14 +170,6 @@ func main() {
 					"--dest=":   complete.PredictAnything,
 				},
 			},
-			"images": complete.Command{
-				Sub: complete.Commands{
-					"delete": complete.Command{},
-				},
-				Flags: complete.Flags{
-					"--dest=": complete.PredictAnything,
-				},
-			},
 			"revits": complete.Command{
 				Sub: complete.Commands{
 					"killall": complete.Command{},

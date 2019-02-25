@@ -92,6 +92,8 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        public static string EnsureFileExtension(string filepath, string extension) => Path.ChangeExtension(filepath, extension);
+
         public static bool EnsureFileNameIsUnique(string targetDir, string fileName) {
             foreach (var subdir in Directory.GetDirectories(targetDir))
                 if (Path.GetFileNameWithoutExtension(subdir).ToLower() == fileName.ToLower())
