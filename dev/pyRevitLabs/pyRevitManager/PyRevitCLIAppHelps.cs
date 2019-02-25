@@ -17,7 +17,7 @@ namespace pyRevitManager {
                     logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
 
-            else if (CommonUtils.VerifyUrl(helpUrl))
+            else if (CommonUtils.VerifyUrl(PyRevitConsts.CLIHelpUrlDev))
                 CommonUtils.OpenUrl(
                     PyRevitConsts.CLIHelpUrlDev,
                     logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
