@@ -130,7 +130,17 @@ func main() {
 			},
 			"releases": complete.Command{
 				Sub: complete.Commands{
-					"open": complete.Command{},
+					"latest": complete.Command{
+						Flags: complete.Flags{
+							"--pre": complete.PredictAnything,
+						},
+					},
+					"open": complete.Command{
+						Flags: complete.Flags{
+							"latest": complete.PredictAnything,
+							"--pre":  complete.PredictAnything,
+						},
+					},
 					"download": complete.Command{
 						Sub: complete.Commands{
 							"installer": complete.Command{},
@@ -139,6 +149,7 @@ func main() {
 					},
 				},
 				Flags: complete.Flags{
+					"latest":  complete.PredictAnything,
 					"--pre":   complete.PredictAnything,
 					"--notes": complete.PredictAnything,
 				},
