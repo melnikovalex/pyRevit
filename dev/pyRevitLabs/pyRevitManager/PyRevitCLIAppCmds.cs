@@ -20,31 +20,6 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
-    internal enum PyRevitCLICommandType {
-        Main,
-        Version,
-        Help,
-        Releases,
-        Env,
-        Clone,
-        Clones,
-        Attach,
-        Attached,
-        Detach,
-        Switch,
-        Extend,
-        Extensions,
-        Image,
-        Images,
-        Revits,
-        Run,
-        Init,
-        Caches,
-        Config,
-        Configs,
-        Cli
-    }
-
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 

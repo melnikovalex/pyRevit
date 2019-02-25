@@ -89,7 +89,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ICLIPattern.cs" />
     <Compile Include="PyRevitCLI.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -124,7 +123,6 @@
     <Content Include="pyRevit.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\PrettyHelp.txt" />
     <None Include="Resources\UsagePatterns.txt" />
   </ItemGroup>
   <ItemGroup>

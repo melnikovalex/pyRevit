@@ -4,19 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using pyRevitManager.Properties;
-
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitManager {
     internal class PyRevitCLIAppHelps {
-        // help strings
-        internal static string UsagePatterns => Resources.UsagePatterns;
-        private static string PrettyHelp => Resources.PrettyHelp;
 
-        internal static void OpenHelp() {
+        internal static void
+        OpenHelp() {
             string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
             if (CommonUtils.VerifyUrl(helpUrl)) {
                 CommonUtils.OpenUrl(
@@ -30,11 +26,54 @@ namespace pyRevitManager {
                     );
         }
 
-        internal static void PrintHelp(PyRevitCLICommandType commandType) {
+        internal static void
+        PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
                 
                 case PyRevitCLICommandType.Main:
-                    Console.WriteLine(PrettyHelp);
+                    Console.WriteLine(@"Usage: pyrevit [OPTIONS] COMMAND
+
+pyRevit environment and clones manager
+
+Options:
+    -h --help       Show this help
+    -V --version    Show version
+    --verbose       Print info messages
+    --debug         Print docopt options and logger debug messages
+    --log           Output log messages to external log file   
+
+Management Commands:
+    env             Print environment information
+    releases        Info about pyRevit releases
+    clones          Manage pyRevit clones
+    extensions      Manage pyRevit extensions
+    configs         Manage pyRevit configurations
+    attached        Manage pyRevit attachments to installed Revit
+    caches          Manage pyRevit caches
+    revits          Manage installed Revits
+    cli             Manage this utility
+
+Commands:
+    clone           Create a clone of pyRevit on this machine
+    extend          Create a clone of a third-party pyRevit extension on this machine
+    attach          Attach pyRevit clone to installed Revit
+    switch          Switch active pyRevit clone
+    detach          Detach pyRevit clone from installed Revit
+    config          Configure pyRevit for current user
+    run             Run python script in Revit
+    init            Init pyRevit bundle
+
+Help Commands:
+    help            Open help in default browser
+    blog            Open pyRevit blog
+    docs            Open pyRevit docs
+    source          Open pyRevit source repo
+    youtube         Open pyRevit on YouTube
+    support         Open pyRevit support page
+
+Run 'pyrevit COMMAND --help' for more information on a command.
+
+");
                     break;
                 
                 case PyRevitCLICommandType.Help:
@@ -228,7 +267,7 @@ namespace pyRevitManager {
                                       IDictionary<string, string> options = null) {
             // build a help guide for a subcommand based on doctop usage entries
             Console.WriteLine(title + Environment.NewLine);
-            foreach (var hline in UsagePatterns.GetLines())
+            foreach (var hline in PyRevitCLI.UsagePatterns.GetLines())
                 if (hline.Contains("Usage:"))
                     Console.WriteLine(hline);
                 else

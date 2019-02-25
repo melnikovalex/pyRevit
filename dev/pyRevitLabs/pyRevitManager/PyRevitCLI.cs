@@ -6,6 +6,7 @@ using System.Reflection;
 using System.IO;
 using System.Diagnostics;
 
+using pyRevitManager.Properties;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
@@ -20,9 +21,15 @@ using NLog.Targets;
 using Console = Colorful.Console;
 
 
-// TODO: pyrevit.exe should change it's config location based on its install location %appdata% vs everything else
-// when pyrevit loads but clone can not be determined (because config is somewhere else?),
-// it's possible that the attachment has been made by another user and that clone is not registered with this user
+// NOTE:
+// ## Add a new command:
+// 1) Update docopt usage pattern file
+// 2) Add new command to PyRevitCLICommandType
+// 3) Update the logic in PyRevitCLI.ProcessArguments
+// 4) Add command code and make sure PyRevitCLI.ProcessArguments correctly parses the arguments
+// 5) Update AppHelps to accept and print help for new command type
+// 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
+// 7) Update the pyrevit-complete.go file with command completion suggestions
 
 
 namespace pyRevitManager {
@@ -33,15 +40,47 @@ namespace pyRevitManager {
         Debug,
     }
 
+    internal enum PyRevitCLICommandType {
+        Main,
+        Version,
+        Help,
+        Blog,
+        Docs,
+        Source,
+        YouTube,
+        Support,
+        Env,
+        Clone,
+        Clones,
+        Attach,
+        Attached,
+        Switch,
+        Detach,
+        Extend,
+        Extensions,
+        Releases,
+        Image,
+        Images,
+        Revits,
+        Run,
+        Init,
+        Caches,
+        Config,
+        Configs,
+        Cli
+    }
+
     internal static class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        // uage patterns
+        internal static string UsagePatterns => Resources.UsagePatterns;
+
+        // arguments dict
         private static IDictionary<string, ValueObject> arguments = null;
 
-        private static List<string> argKeywords = null;
-
+        internal static bool IsVersionMode = false;
         internal static bool IsHelpMode = false;
-        internal static bool IsCompleteMode = false;
 
         // cli version property
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
@@ -97,19 +136,25 @@ namespace pyRevitManager {
                     arguments.Remove("--log");
                 }
 
+                // check if requesting version
+                IsVersionMode = arguments["--version"].IsTrue || arguments["-V"].IsTrue;
+                
+                // check if requesting help
+                IsHelpMode = arguments["--help"].IsTrue || arguments["-h"].IsTrue;
+
                 // config logger
                 LogManager.Configuration = config;
 
-                // now call methods based on inputs
                 try {
+                    // now call methods based on inputs
                     ProcessArguments();
+
+                    // process global error codes
+                    ProcessErrorCodes();
                 }
                 catch (Exception ex) {
                     LogException(ex, logLevel);
                 }
-
-                // process global error codes
-                ProcessErrorCodes();
 
                 // Flush and close down internal threads and timers
                 LogManager.Shutdown();
@@ -121,118 +166,30 @@ namespace pyRevitManager {
             }
         }
 
+        // cli argument processor
         private static void ProcessArguments() {
-            // setup active keys for safe command extraction
-            argKeywords = ExtractEnabledKeywords(arguments);
+            if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
 
-            // setup help request flag
-            IsHelpMode = arguments["--help"].IsTrue || arguments["-h"].IsTrue;
-            //setup autocomplete mode
-            IsCompleteMode = arguments["--complete"].IsTrue;
+            else if (all("help")) PyRevitCLIAppHelps.OpenHelp();
 
-            // =======================================================================================================
-            // $ pyrevit (-V|--version)
-            // =======================================================================================================
-            if (arguments["--version"].IsTrue || arguments["-V"].IsTrue)
-                PyRevitCLIAppCmds.PrintVersion();
+            else if (all("blog")) CommonUtils.OpenUrl(PyRevitConsts.BlogsUrl);
 
-            // =======================================================================================================
-            // $ pyrevit help
-            // =======================================================================================================
-            else if (VerifyCommand("help")) {
+            else if (all("docs")) CommonUtils.OpenUrl(PyRevitConsts.DocsUrl);
 
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Help);
-                else
-                    PyRevitCLIAppHelps.OpenHelp();
-            }
+            else if (all("source")) CommonUtils.OpenUrl(PyRevitConsts.SourceRepoUrl);
 
-            // =======================================================================================================
-            // $ pyrevit (blog | docs | source | youtube | support)
-            // =======================================================================================================
-            else if (VerifyCommand("blog"))
-                CommonUtils.OpenUrl(PyRevitConsts.BlogsUrl);
+            else if (all("youtube")) CommonUtils.OpenUrl(PyRevitConsts.YoutubeUrl);
 
-            else if (VerifyCommand("docs"))
-                CommonUtils.OpenUrl(PyRevitConsts.DocsUrl);
+            else if (all("support")) CommonUtils.OpenUrl(PyRevitConsts.SupportRepoUrl);
 
-            else if (VerifyCommand("source"))
-                CommonUtils.OpenUrl(PyRevitConsts.SourceRepoUrl);
-
-            else if (VerifyCommand("youtube"))
-                CommonUtils.OpenUrl(PyRevitConsts.YoutubeUrl);
-
-            else if (VerifyCommand("support"))
-                CommonUtils.OpenUrl(PyRevitConsts.SupportRepoUrl);
-
-            // =======================================================================================================
-            // $ pyrevit releases --help
-            // $ pyrevit releases [--notes]
-            // $ pyrevit releases latest [--pre] [--notes]
-            // $ pyrevit releases <search_pattern> [--notes]
-            // =======================================================================================================
-            else if (VerifyCommand("releases")
-                        || VerifyCommand("releases", "latest")) {
-
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Releases);
-                else
-                    PyRevitCLIReleaseCmds.PrintReleases(
-                        searchPattern: TryGetValue("<search_pattern>"),
-                        latest: arguments["latest"].IsTrue,
-                        printReleaseNotes: arguments["--notes"].IsTrue,
-                        listPreReleases: arguments["--pre"].IsTrue
-                    );
-            }
-
-            // =======================================================================================================
-            // $ pyrevit releases open latest [--pre]
-            // $ pyrevit releases open <search_pattern>
-            // =======================================================================================================
-            else if (VerifyCommand("releases", "open")
-                        || VerifyCommand("releases", "open", "latest"))
-
-                PyRevitCLIReleaseCmds.OpenReleasePage(
-                    searchPattern: TryGetValue("<search_pattern>"),
-                    latest: arguments["latest"].IsTrue,
-                    listPreReleases: arguments["--pre"].IsTrue
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit releases download (installer|archive) latest --dest=<dest_path> [--pre]
-            // $ pyrevit releases download (installer|archive) <search_pattern> --dest=<dest_path>
-            // =======================================================================================================
-            else if (VerifyCommand("releases", "download", "installer")
-                        || VerifyCommand("releases", "download", "archive")
-                        || VerifyCommand("releases", "download", "installer", "latest")
-                        || VerifyCommand("releases", "download", "archive", "latest"))
-
-                PyRevitCLIReleaseCmds.DownloadReleaseAsset(
-                    arguments["archive"].IsTrue ? PyRevitReleaseAssetType.Archive : PyRevitReleaseAssetType.Installer,
-                    destPath: TryGetValue("--dest"),
-                    searchPattern: TryGetValue("<search_pattern>"),
-                    latest: arguments["latest"].IsTrue,
-                    listPreReleases: arguments["--pre"].IsTrue
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit env [--json] [--help]
-            // =======================================================================================================
-            else if (VerifyCommand("env")) {
-
+            else if (all("env")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
                 else
                     PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue);
             }
 
-            // =======================================================================================================
-            // $ pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--source=<archive_url>] [--branch=<branch_name>]
-            // $ pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>]
-            // $ pyrevit clone <clone_name> --image=<image_name> [--dest=<dest_path>]
-            // =======================================================================================================
-            else if (VerifyCommand("clone")) {
-
+            else if (all("clone")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Clone);
                 else
@@ -246,128 +203,83 @@ namespace pyRevitManager {
                     );
             }
 
-            // =======================================================================================================
-            // $ pyrevit clones
-            // =======================================================================================================
-            else if (VerifyCommand("clones")) {
-
+            else if (all("clones")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Clones);
+
+                else if (all("info"))
+                    PyRevitCLICloneCmds.PrintCloneInfo(TryGetValue("<clone_name>"));
+
+                else if (all("open"))
+                    PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
+
+                else if (all("add"))
+                    PyRevitCLICloneCmds.RegisterClone(
+                        TryGetValue("<clone_name>"),
+                        TryGetValue("<clone_path>")
+                        );
+
+                else if (all("forget"))
+                    PyRevitCLICloneCmds.ForgetClone(
+                        allClones: arguments["--all"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>")
+                        );
+
+                else if (all("rename"))
+                    PyRevitCLICloneCmds.RenameClone(
+                        cloneName: TryGetValue("<clone_name>"),
+                        cloneNewName: TryGetValue("<clone_new_name>")
+                        );
+
+                else if (all("delete"))
+                    PyRevitCLICloneCmds.DeleteClone(
+                        allClones: arguments["--all"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>"),
+                        clearConfigs: arguments["--clearconfigs"].IsTrue
+                        );
+
+                else if (all("branch"))
+                    PyRevitCLICloneCmds.GetSetCloneBranch(
+                       cloneName: TryGetValue("<clone_name>"),
+                       branchName: TryGetValue("<branch_name>")
+                       );
+
+                else if (all("version"))
+                    PyRevitCLICloneCmds.GetSetCloneTag(
+                       cloneName: TryGetValue("<clone_name>"),
+                       tagName: TryGetValue("<tag_name>")
+                       );
+
+                else if (all("commit"))
+                    PyRevitCLICloneCmds.GetSetCloneCommit(
+                       cloneName: TryGetValue("<clone_name>"),
+                       commitHash: TryGetValue("<commit_hash>")
+                       );
+
+                else if (all("origin"))
+                    PyRevitCLICloneCmds.GetSetCloneOrigin(
+                       cloneName: TryGetValue("<clone_name>"),
+                       originUrl: TryGetValue("<origin_url>"),
+                       reset: arguments["--reset"].IsTrue
+                       );
+
+                else if (all("deployments"))
+                    PyRevitCLICloneCmds.PrintCloneDeployments(TryGetValue("<clone_name>"));
+
+                else if (all("engines"))
+                    PyRevitCLICloneCmds.PrintCloneEngines(TryGetValue("<clone_name>"));
+
+                else if (all("update"))
+                    PyRevitCLICloneCmds.UpdateClone(
+                        allClones: arguments["--all"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>")
+                        );
+
                 else
                     PyRevitCLICloneCmds.PrintClones();
             }
 
-            // =======================================================================================================
-            // $ pyrevit clones (info | open) <clone_name>
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "info"))
-                PyRevitCLICloneCmds.PrintCloneInfo(TryGetValue("<clone_name>"));
-
-            else if (VerifyCommand("clones", "open"))
-                PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
-
-            // =======================================================================================================
-            // $ pyrevit clones add <clone_name> <clone_path>
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "add"))
-                PyRevitCLICloneCmds.RegisterClone(
-                    TryGetValue("<clone_name>"),
-                    TryGetValue("<clone_path>")
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit clones forget (--all | <clone_name>)
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "forget"))
-                PyRevitCLICloneCmds.ForgetClone(
-                    allClones: arguments["--all"].IsTrue,
-                    cloneName: TryGetValue("<clone_name>")
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit clones rename <clone_name> <clone_new_name>
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "rename"))
-                PyRevitCLICloneCmds.RenameClone(
-                    cloneName: TryGetValue("<clone_name>"),
-                    cloneNewName: TryGetValue("<clone_new_name>")
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "delete"))
-                PyRevitCLICloneCmds.DeleteClone(
-                    allClones: arguments["--all"].IsTrue,
-                    cloneName: TryGetValue("<clone_name>"),
-                    clearConfigs: arguments["--clearconfigs"].IsTrue
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit clones branch <clone_name> [<branch_name>]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "branch"))
-                PyRevitCLICloneCmds.GetSetCloneBranch(
-                   cloneName: TryGetValue("<clone_name>"),
-                   branchName: TryGetValue("<branch_name>")
-                   );
-
-            // =======================================================================================================
-            // $ pyrevit clones version <clone_name> [<tag_name>]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "version"))
-                PyRevitCLICloneCmds.GetSetCloneTag(
-                   cloneName: TryGetValue("<clone_name>"),
-                   tagName: TryGetValue("<tag_name>")
-                   );
-
-            // =======================================================================================================
-            // $ pyrevit clones commit <clone_name> [<commit_hash>]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "commit"))
-                PyRevitCLICloneCmds.GetSetCloneCommit(
-                   cloneName: TryGetValue("<clone_name>"),
-                   commitHash: TryGetValue("<commit_hash>")
-                   );
-
-            // =======================================================================================================
-            // $ pyrevit clones origin <clone_name> [<origin_url>]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "origin"))
-                PyRevitCLICloneCmds.GetSetCloneOrigin(
-                   cloneName: TryGetValue("<clone_name>"),
-                   originUrl: TryGetValue("<origin_url>"),
-                   reset: arguments["--reset"].IsTrue
-                   );
-
-            // =======================================================================================================
-            // $ pyrevit clones deployments <clone_name>
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "deployments"))
-                PyRevitCLICloneCmds.PrintCloneDeployments(TryGetValue("<clone_name>"));
-
-            // =======================================================================================================
-            // $ pyrevit clones engines <clone_name>
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "engines"))
-                PyRevitCLICloneCmds.PrintCloneEngines(TryGetValue("<clone_name>"));
-
-            // =======================================================================================================
-            // $ pyrevit clones update (--all | <clone_name>) [--gui]
-            // =======================================================================================================
-            else if (VerifyCommand("clones", "update"))
-                PyRevitCLICloneCmds.UpdateClone(
-                    allClones: arguments["--all"].IsTrue,
-                    cloneName: TryGetValue("<clone_name>")
-                    );
-
-            // =======================================================================================================
-            // $ pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers]
-            // =======================================================================================================
-            else if (VerifyCommand("attach")
-                    || VerifyCommand("attach", "latest")
-                    || VerifyCommand("attach", "dynamosafe")) {
-
+            else if (all("attach")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Attach);
                 else
@@ -380,220 +292,187 @@ namespace pyRevitManager {
                         installed: arguments["--installed"].IsTrue,
                         attached: arguments["--attached"].IsTrue,
                         allUsers: arguments["--allusers"].IsTrue
-                );
+                        );
             }
 
-            // =======================================================================================================
-            // $ pyrevit detach (--all | <revit_year>)
-            // =======================================================================================================
-            else if (VerifyCommand("detach")) {
-
+            else if (all("detach")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Detach);
                 else
                     PyRevitCLICloneCmds.DetachClone(
                         revitYear: TryGetValue("<revit_year>"),
                         all: arguments["--all"].IsTrue
-                    );
+                        );
             }
 
-            // =======================================================================================================
-            // $ pyrevit attached [<revit_year>] [--help]
-            // =======================================================================================================
-            else if (VerifyCommand("attached")) {
-
+            else if (all("attached")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Attached);
                 else
-                    PyRevitCLICloneCmds.ListAttachments(
-                        revitYear: TryGetValue("<revit_year>")
-                    );
+                    PyRevitCLICloneCmds.ListAttachments(revitYear: TryGetValue("<revit_year>"));
             }
 
-            // =======================================================================================================
-            // $ pyrevit switch <clone_name> [<revit_year>]
-            // =======================================================================================================
-            else if (VerifyCommand("switch")) {
-
+            else if (all("switch")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Switch);
                 else
                     PyRevitCLICloneCmds.SwitchAttachment(
                         cloneName: TryGetValue("<clone_name>"),
                         revitYear: TryGetValue("<revit_year>")
-                    );
+                        );
             }
 
-            // =======================================================================================================
-            // $ pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>]
-            // =======================================================================================================
-            else if (VerifyCommand("extend")) {
-
+            else if (all("extend")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
+
+                else if (any("ui", "lib", "run"))
+                    PyRevitCLIExtensionCmds.Extend(
+                        ui: arguments["ui"].IsTrue,
+                        lib: arguments["lib"].IsTrue,
+                        run: arguments["run"].IsTrue,
+                        extName: TryGetValue("<extension_name>"),
+                        destPath: TryGetValue("--dest"),
+                        repoUrl: TryGetValue("<repo_url>"),
+                        branchName: TryGetValue("--branch")
+                        );
+
                 else
                     PyRevitCLIExtensionCmds.Extend(
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         branchName: TryGetValue("--branch")
-                    );
+                        );
             }
 
-            // =======================================================================================================
-            // $ pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>]
-            // =======================================================================================================
-            else if (VerifyCommand("extend", "ui")
-                        || VerifyCommand("extend", "lib")
-                        || VerifyCommand("extend", "run"))
-                PyRevitCLIExtensionCmds.Extend(
-                    ui: arguments["ui"].IsTrue,
-                    lib: arguments["lib"].IsTrue,
-                    run: arguments["run"].IsTrue,
-                    extName: TryGetValue("<extension_name>"),
-                    destPath: TryGetValue("--dest"),
-                    repoUrl: TryGetValue("<repo_url>"),
-                    branchName: TryGetValue("--branch")
-                );
-
-            // =======================================================================================================
-            // $ pyrevit extensions [--help]
-            // =======================================================================================================
-            else if (VerifyCommand("extensions")) {
-
+            else if (all("extensions")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extensions);
+
+                else if (all("search"))
+                    PyRevitCLIExtensionCmds.PrintExtensionDefinitions(
+                        searchPattern: TryGetValue("<search_pattern>"),
+                        headerPrefix: "Matched"
+                    );
+
+                else if (any("info", "help", "open"))
+                    PyRevitCLIExtensionCmds.ProcessExtensionInfoCommands(
+                        extName: TryGetValue("<extension_name>"),
+                        info: arguments["info"].IsTrue,
+                        help: arguments["help"].IsTrue,
+                        open: arguments["open"].IsTrue
+                    );
+
+                else if (all("delete"))
+                    PyRevitCLIExtensionCmds.DeleteExtension(TryGetValue("<extension_name>"));
+
+                else if (all("origin"))
+                    PyRevitCLIExtensionCmds.GetSetExtensionOrigin(
+                        extName: TryGetValue("<extension_name>"),
+                        originUrl: TryGetValue("<origin_url>"),
+                        reset: arguments["--reset"].IsTrue
+                        );
+
+                else if (all("paths")) {
+
+                    if (all("add"))
+                        PyRevitCLIExtensionCmds.AddExtensionPath(
+                            searchPath: TryGetValue("<extensions_path>")
+                        );
+
+                    else if (all("forget"))
+                        PyRevitCLIExtensionCmds.ForgetAllExtensionPaths(
+                            all: arguments["--all"].IsTrue,
+                            searchPath: TryGetValue("<extensions_path>")
+                        );
+
+                    else
+                        PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
+                }
+
+                else if (any("enable", "disable"))
+                    PyRevitCLIExtensionCmds.ToggleExtension(
+                        enable: arguments["enable"].IsTrue,
+                        extName: TryGetValue("<extension_name>")
+                    );
+
+                else if (all("sources")) {
+
+                    if (all("add"))
+                        PyRevitCLIExtensionCmds.AddExtensionLookupSource(
+                            lookupPath: TryGetValue("<source_json_or_url>")
+                        );
+
+                    else if (all("forget"))
+                        PyRevitCLIExtensionCmds.ForgetExtensionLookupSources(
+                            all: arguments["--all"].IsTrue,
+                            lookupPath: TryGetValue("<source_json_or_url>")
+                        );
+
+                    else
+                        PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
+                }
+
+                else if (all("update"))
+                    PyRevitCLIExtensionCmds.UpdateExtension(
+                        all: arguments["--all"].IsTrue,
+                        extName: TryGetValue("<extension_name>")
+                    );
+
                 else
                     PyRevitCLIExtensionCmds.PrintExtensions();
             }
 
-            // =======================================================================================================
-            // $ pyrevit extensions search <search_pattern>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "search"))
-                PyRevitCLIExtensionCmds.PrintExtensionDefinitions(
-                    searchPattern: TryGetValue("<search_pattern>"),
-                    headerPrefix: "Matched"
-                );
+            else if (all("releases")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Releases);
 
-            // =======================================================================================================
-            // $ pyrevit extensions (info | help | open) <extension_name>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "info")
-                        || VerifyCommand("extensions", "help")
-                        || VerifyCommand("extensions", "open"))
-                PyRevitCLIExtensionCmds.ProcessExtensionInfoCommands(
-                    extName: TryGetValue("<extension_name>"),
-                    info: arguments["info"].IsTrue,
-                    help: arguments["help"].IsTrue,
-                    open: arguments["open"].IsTrue
-                );
+                else if (all("open"))
+                    PyRevitCLIReleaseCmds.OpenReleasePage(
+                        searchPattern: TryGetValue("<search_pattern>"),
+                        latest: arguments["latest"].IsTrue,
+                        listPreReleases: arguments["--pre"].IsTrue
+                        );
 
-            // =======================================================================================================
-            // $ pyrevit extensions delete <extension_name>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "delete"))
-                PyRevitCLIExtensionCmds.DeleteExtension(TryGetValue("<extension_name>"));
+                else if (all("download"))
+                    PyRevitCLIReleaseCmds.DownloadReleaseAsset(
+                        arguments["archive"].IsTrue ? PyRevitReleaseAssetType.Archive : PyRevitReleaseAssetType.Installer,
+                        destPath: TryGetValue("--dest"),
+                        searchPattern: TryGetValue("<search_pattern>"),
+                        latest: arguments["latest"].IsTrue,
+                        listPreReleases: arguments["--pre"].IsTrue
+                        );
 
-            // =======================================================================================================
-            // $ pyrevit extensions origin <extension_name> --reset
-            // $ pyrevit extensions origin <extension_name> [<origin_url>]
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "origin"))
-                PyRevitCLIExtensionCmds.GetSetExtensionOrigin(
-                    extName: TryGetValue("<extension_name>"),
-                    originUrl: TryGetValue("<origin_url>"),
-                    reset: arguments["--reset"].IsTrue
-                    );
+                else
+                    PyRevitCLIReleaseCmds.PrintReleases(
+                        searchPattern: TryGetValue("<search_pattern>"),
+                        latest: arguments["latest"].IsTrue,
+                        printReleaseNotes: arguments["--notes"].IsTrue,
+                        listPreReleases: arguments["--pre"].IsTrue
+                        );
+            }
 
-            // =======================================================================================================
-            // $ pyrevit extensions paths
-            // $ pyrevit extensions paths forget --all
-            // $ pyrevit extensions paths (add | forget) <extensions_path>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "paths"))
-                PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
-
-            else if (VerifyCommand("extensions", "forget"))
-                PyRevitCLIExtensionCmds.ForgetAllExtensionPaths(
-                    all: arguments["--all"].IsTrue,
-                    searchPath: TryGetValue("<extensions_path>")
-                );
-
-            else if (VerifyCommand("extensions", "paths", "add"))
-                PyRevitCLIExtensionCmds.AddExtensionPath(
-                    searchPath: TryGetValue("<extensions_path>")
-                );
-
-            // =======================================================================================================
-            // $ pyrevit extensions (enable | disable) <extension_name>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "enable")
-                        || VerifyCommand("extensions", "disable"))
-                PyRevitCLIExtensionCmds.ToggleExtension(
-                    enable: arguments["enable"].IsTrue,
-                    extName: TryGetValue("<extension_name>")
-                );
-
-            // =======================================================================================================
-            // $ pyrevit extensions sources
-            // $ pyrevit extensions sources forget --all
-            // $ pyrevit extensions sources (add | forget) <source_json_or_url>
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "sources")
-                        || VerifyCommand("extensions", "disable"))
-                PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
-
-            else if (VerifyCommand("extensions", "sources", "forget"))
-                PyRevitCLIExtensionCmds.ForgetExtensionLookupSources(
-                    all: arguments["--all"].IsTrue,
-                    lookupPath: TryGetValue("<source_json_or_url>")
-                );
-
-            else if (VerifyCommand("extensions", "sources", "add"))
-                PyRevitCLIExtensionCmds.AddExtensionLookupSource(
-                    lookupPath: TryGetValue("<source_json_or_url>")
-                );
-
-
-            // =======================================================================================================
-            // $ pyrevit extensions update (--all | <extension_name>)
-            // =======================================================================================================
-            else if (VerifyCommand("extensions", "update"))
-                PyRevitCLIExtensionCmds.UpdateExtension(
-                    all: arguments["--all"].IsTrue,
-                    extName: TryGetValue("<extension_name>")
-                );
-
-            // =======================================================================================================
-            // $ pyrevit image *
-            // =======================================================================================================
-            else if (VerifyCommand("image"))
+            else if (all("image"))
                 throw new NotImplementedException();
 
-            // =======================================================================================================
-            // =======================================================================================================
-            // $ pyrevit revits [--installed]
-            // =======================================================================================================
-            else if (VerifyCommand("revits")) {
+            else if (all("images"))
+                throw new NotImplementedException();
 
+            else if (all("revits")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
+
+                else if (all("killall"))
+                    PyRevitCLIRevitCmds.KillAllRevits(
+                        revitYear: TryGetValue("<revit_year>")
+                    );
+
                 else
                     PyRevitCLIRevitCmds.PrintRevits(running: arguments["--installed"].IsFalse);
             }
 
-            // =======================================================================================================
-            // $ pyrevit revits killall [<revit_year>]
-            // =======================================================================================================
-            else if (VerifyCommand("revits", "killall"))
-                PyRevitCLIRevitCmds.KillAllRevits(
-                    revitYear: TryGetValue("<revit_year>")
-                );
 
-            // =======================================================================================================
-            // $ pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>]
-            // =======================================================================================================
-            else if (VerifyCommand("revits", "fileinfo")) {
+            else if (all("revits", "fileinfo")) {
                 var targetPath = TryGetValue("<file_or_dir_path>");
                 var outputCSV = TryGetValue("--csv");
 
@@ -656,16 +535,16 @@ namespace pyRevitManager {
             // $ pyrevit revits addons install <addon_name> <dest_path> [--allusers]
             // $ pyrevit revits addons uninstall <addon_name>
             // =======================================================================================================
-            else if (VerifyCommand("revits", "addons", "prepare")) {
+            else if (all("revits", "addons", "prepare")) {
                 // setup the addon folders
                 var revitYear = TryGetValue("<revit_year>");
                 if (revitYear != null)
                     Addons.PrepareAddonPath(int.Parse(revitYear), allUsers: arguments["--allusers"].IsTrue);
             }
 
-            else if (VerifyCommand("revits", "addons")
-                        || VerifyCommand("revits", "addons", "install")
-                        || VerifyCommand("revits", "addons", "uninstall")) {
+            else if (all("revits", "addons")
+                        || all("revits", "addons", "install")
+                        || all("revits", "addons", "uninstall")) {
                 // TODO: implement revit addon manager
                 logger.Error("Revit addon manager is not implemented yet");
             }
@@ -674,7 +553,7 @@ namespace pyRevitManager {
             // $ pyrevit run <script_file_or_command_name> [--revit=<revit_year>] [--purge]
             // $ pyrevit run <script_file_or_command_name> <model_file> [--revit=<revit_year>] [--purge]
             // =======================================================================================================
-            else if (VerifyCommand("run")) {
+            else if (all("run")) {
 
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Run);
@@ -839,7 +718,7 @@ namespace pyRevitManager {
             // =======================================================================================================
             // $ pyrevit init --help
             // =======================================================================================================
-            else if (VerifyCommand("init") && arguments["--help"].IsTrue) {
+            else if (all("init") && arguments["--help"].IsTrue) {
                 PyRevitCLIAppHelps.BuildHelp(new List<string>() { "init" },
                                     "Init pyRevit bundles");
             }
@@ -848,9 +727,9 @@ namespace pyRevitManager {
             // =======================================================================================================
             //  $ pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<templates_path>]
             // =======================================================================================================
-            else if (VerifyCommand("init", "ui")
-                        || VerifyCommand("init", "lib")
-                        || VerifyCommand("init", "run")) {
+            else if (all("init", "ui")
+                        || all("init", "lib")
+                        || all("init", "run")) {
 
                 PyRevitExtensionTypes extType = GetExtentionTypeFromArgument(arguments);
 
@@ -894,7 +773,7 @@ namespace pyRevitManager {
             // =======================================================================================================
             // $ pyrevit caches --help
             // =======================================================================================================
-            else if (VerifyCommand("caches") && arguments["--help"].IsTrue) {
+            else if (all("caches") && arguments["--help"].IsTrue) {
                 PyRevitCLIAppHelps.BuildHelp(new List<string>() { "caches" },
                                     "Manage pyRevit caches");
             }
@@ -902,15 +781,15 @@ namespace pyRevitManager {
             // =======================================================================================================
             // $ pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
             // =======================================================================================================
-            else if (VerifyCommand("init", "tab")
-                        || VerifyCommand("init", "panel")
-                        || VerifyCommand("init", "panelopt")
-                        || VerifyCommand("init", "pull")
-                        || VerifyCommand("init", "split")
-                        || VerifyCommand("init", "splitpush")
-                        || VerifyCommand("init", "push")
-                        || VerifyCommand("init", "smart")
-                        || VerifyCommand("init", "command")) {
+            else if (all("init", "tab")
+                        || all("init", "panel")
+                        || all("init", "panelopt")
+                        || all("init", "pull")
+                        || all("init", "split")
+                        || all("init", "splitpush")
+                        || all("init", "push")
+                        || all("init", "smart")
+                        || all("init", "command")) {
 
                 // determine bundle
                 PyRevitBundleTypes bundleType = PyRevitBundleTypes.Unknown;
@@ -975,14 +854,14 @@ namespace pyRevitManager {
             // $ pyrevit init templates
             // $ pyrevit init templates (add | forget) <init_templates_path>
             // =======================================================================================================
-            else if (VerifyCommand("init", "templates")) {
+            else if (all("init", "templates")) {
                 Console.WriteLine(Directory.GetCurrentDirectory());
             }
 
             // =======================================================================================================
             // $ pyrevit caches clear (--all | <revit_year>)
             // =======================================================================================================
-            else if (VerifyCommand("caches", "clear")) {
+            else if (all("caches", "clear")) {
                 if (arguments["--all"].IsTrue)
                     PyRevit.ClearAllCaches();
                 else if (arguments["<revit_year>"] != null) {
@@ -996,7 +875,7 @@ namespace pyRevitManager {
             // $ pyrevit config --help
             // $ pyrevit config <template_config_path>
             // =======================================================================================================
-            else if (VerifyCommand("config")) {
+            else if (all("config")) {
 
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Config);
@@ -1009,140 +888,140 @@ namespace pyRevitManager {
             // =======================================================================================================
             // $ pyrevit configs
             // =======================================================================================================
-            else if (VerifyCommand("configs"))
+            else if (all("configs"))
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
 
                 // =======================================================================================================
                 // $ pyrevit configs logs [(none | verbose | debug)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "logs"))
+                else if (all("configs", "logs"))
                     Console.WriteLine(string.Format("Logging Level is {0}", PyRevit.GetLoggingLevel().ToString()));
 
-                else if (VerifyCommand("configs", "logs", "none"))
+                else if (all("configs", "logs", "none"))
                     PyRevit.SetLoggingLevel(PyRevitLogLevels.None);
 
-                else if (VerifyCommand("configs", "logs", "verbose"))
+                else if (all("configs", "logs", "verbose"))
                     PyRevit.SetLoggingLevel(PyRevitLogLevels.Verbose);
 
-                else if (VerifyCommand("configs", "logs", "debug"))
+                else if (all("configs", "logs", "debug"))
                     PyRevit.SetLoggingLevel(PyRevitLogLevels.Debug);
 
                 // =======================================================================================================
                 // $ pyrevit configs allowremotedll [(enable | disable)]
                 // =======================================================================================================
                 // TODO: Implement allowremotedll
-                else if (VerifyCommand("configs", "allowremotedll"))
+                else if (all("configs", "allowremotedll"))
                     logger.Error("Not Yet Implemented");
 
                 // =======================================================================================================
                 // $ pyrevit configs checkupdates [(enable | disable)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "checkupdates"))
+                else if (all("configs", "checkupdates"))
                     Console.WriteLine(
                         string.Format("Check Updates is {0}",
                         PyRevit.GetCheckUpdates() ? "Enabled" : "Disabled")
                         );
 
-                else if (VerifyCommand("configs", "checkupdates", "enable")
-                        || VerifyCommand("configs", "checkupdates", "disable"))
+                else if (all("configs", "checkupdates", "enable")
+                        || all("configs", "checkupdates", "disable"))
                     PyRevit.SetCheckUpdates(arguments["enable"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs autoupdate [(enable | disable)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "autoupdate"))
+                else if (all("configs", "autoupdate"))
                     Console.WriteLine(
                         string.Format("Auto Update is {0}",
                         PyRevit.GetAutoUpdate() ? "Enabled" : "Disabled")
                         );
 
-                else if (VerifyCommand("configs", "autoupdate", "enable")
-                        || VerifyCommand("configs", "autoupdate", "disable"))
+                else if (all("configs", "autoupdate", "enable")
+                        || all("configs", "autoupdate", "disable"))
                     PyRevit.SetAutoUpdate(arguments["enable"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs rocketmode [(enable | disable)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "rocketmode"))
+                else if (all("configs", "rocketmode"))
                     Console.WriteLine(
                         string.Format("Rocket Mode is {0}",
                         PyRevit.GetRocketMode() ? "Enabled" : "Disabled")
                         );
 
-                else if (VerifyCommand("configs", "rocketmode", "enable")
-                        || VerifyCommand("configs", "rocketmode", "disable"))
+                else if (all("configs", "rocketmode", "enable")
+                        || all("configs", "rocketmode", "disable"))
                     PyRevit.SetRocketMode(arguments["enable"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs filelogging [(enable | disable)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "filelogging"))
+                else if (all("configs", "filelogging"))
                     Console.WriteLine(
                         string.Format("File Logging is {0}",
                         PyRevit.GetFileLogging() ? "Enabled" : "Disabled")
                         );
 
-                else if (VerifyCommand("configs", "filelogging", "enable")
-                        || VerifyCommand("configs", "filelogging", "disable"))
+                else if (all("configs", "filelogging", "enable")
+                        || all("configs", "filelogging", "disable"))
                     PyRevit.SetFileLogging(arguments["enable"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs loadbeta [(enable | disable)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "loadbeta"))
+                else if (all("configs", "loadbeta"))
                     Console.WriteLine(
                         string.Format("Load Beta is {0}",
                         PyRevit.GetLoadBetaTools() ? "Enabled" : "Disabled")
                         );
 
-                else if (VerifyCommand("configs", "loadbeta", "enable")
-                        || VerifyCommand("configs", "loadbeta", "disable"))
+                else if (all("configs", "loadbeta", "enable")
+                        || all("configs", "loadbeta", "disable"))
                     PyRevit.SetLoadBetaTools(arguments["enable"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs usercanupdate [(Yes | No)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usercanupdate"))
+                else if (all("configs", "usercanupdate"))
                     Console.WriteLine(
                         string.Format("User {0} update.",
                         PyRevit.GetUserCanUpdate() ? "CAN" : "CAN NOT")
                         );
 
-                else if (VerifyCommand("configs", "usercanupdate", "Yes")
-                        || VerifyCommand("configs", "usercanupdate", "No"))
+                else if (all("configs", "usercanupdate", "Yes")
+                        || all("configs", "usercanupdate", "No"))
                     PyRevit.SetUserCanUpdate(arguments["Yes"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs usercanextend [(Yes | No)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usercanextend"))
+                else if (all("configs", "usercanextend"))
                     Console.WriteLine(
                         string.Format("User {0} extend.",
                         PyRevit.GetUserCanExtend() ? "CAN" : "CAN NOT")
                         );
 
-                else if (VerifyCommand("configs", "usercanextend", "Yes")
-                        || VerifyCommand("configs", "usercanextend", "No"))
+                else if (all("configs", "usercanextend", "Yes")
+                        || all("configs", "usercanextend", "No"))
                     PyRevit.SetUserCanExtend(arguments["Yes"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs usercanconfig [(Yes | No)]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usercanconfig"))
+                else if (all("configs", "usercanconfig"))
                     Console.WriteLine(
                         string.Format("User {0} config.",
                         PyRevit.GetUserCanConfig() ? "CAN" : "CAN NOT")
                         );
 
-                else if (VerifyCommand("configs", "usercanconfig", "Yes")
-                        || VerifyCommand("configs", "usercanconfig", "No"))
+                else if (all("configs", "usercanconfig", "Yes")
+                        || all("configs", "usercanconfig", "No"))
                     PyRevit.SetUserCanConfig(arguments["Yes"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs usagelogging
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usagelogging")) {
+                else if (all("configs", "usagelogging")) {
                     Console.WriteLine(
                         string.Format("Usage logging is {0}",
                         PyRevit.GetUsageReporting() ? "Enabled" : "Disabled")
@@ -1154,22 +1033,22 @@ namespace pyRevitManager {
                 // =======================================================================================================
                 // $ pyrevit configs usagelogging enable (file | server) <dest_path>
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usagelogging", "enable", "file"))
+                else if (all("configs", "usagelogging", "enable", "file"))
                     PyRevit.EnableUsageReporting(logFilePath: TryGetValue("<dest_path>"));
 
-                else if (VerifyCommand("configs", "usagelogging", "enable", "server"))
+                else if (all("configs", "usagelogging", "enable", "server"))
                     PyRevit.EnableUsageReporting(logServerUrl: TryGetValue("<dest_path>"));
 
                 // =======================================================================================================
                 // $ pyrevit configs usagelogging disable
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "usagelogging", "disable"))
+                else if (all("configs", "usagelogging", "disable"))
                     PyRevit.DisableUsageReporting();
 
                 // =======================================================================================================
                 // $ pyrevit configs outputcss [<css_path>]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "outputcss")) {
+                else if (all("configs", "outputcss")) {
                     if (arguments["<css_path>"] == null)
                         Console.WriteLine(
                             string.Format("Output Style Sheet is set to: {0}",
@@ -1182,14 +1061,14 @@ namespace pyRevitManager {
                 // =======================================================================================================
                 // $ pyrevit configs seed [--lock]
                 // =======================================================================================================
-                else if (VerifyCommand("configs", "seed"))
+                else if (all("configs", "seed"))
                     PyRevit.SeedConfig(makeCurrentUserAsOwner: arguments["--lock"].IsTrue);
 
                 // =======================================================================================================
                 // $ pyrevit configs <option_path> [(enable | disable)]
                 // $ pyrevit configs <option_path> [<option_value>]
                 // =======================================================================================================
-                else if (VerifyCommand("configs")) {
+                else if (all("configs")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names
                         string orignalOptionValue = TryGetValue("<option_path>");
@@ -1214,8 +1093,8 @@ namespace pyRevitManager {
                     }
                 }
 
-                else if (VerifyCommand("configs", "enable")
-                        || VerifyCommand("configs", "disable")) {
+                else if (all("configs", "enable")
+                        || all("configs", "disable")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names
                         string orignalOptionValue = TryGetValue("<option_path>");
@@ -1231,14 +1110,14 @@ namespace pyRevitManager {
                 // =======================================================================================================
                 // $ pyrevit cli --help
                 // =======================================================================================================
-                else if (VerifyCommand("cli"))
+                else if (all("cli"))
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Cli);
 
                     // =======================================================================================================
                     // $ pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
                     // =======================================================================================================
-                    else if (VerifyCommand("cli", "addshortcut"))
+                    else if (all("cli", "addshortcut"))
                         PyRevitCLIAppCmds.AddCLIShortcut(
                             shortcutName: TryGetValue("<shortcut_name>"),
                             shortcutArgs: TryGetValue("<shortcut_args>"),
@@ -1249,7 +1128,7 @@ namespace pyRevitManager {
                     // =======================================================================================================
                     // $ pyrevit cli installautocomplete
                     // =======================================================================================================
-                    else if (VerifyCommand("cli", "installautocomplete"))
+                    else if (all("cli", "installautocomplete"))
                         PyRevitCLIAppCmds.ActivateAutoComplete();
 
                     // =======================================================================================================
@@ -1260,19 +1139,19 @@ namespace pyRevitManager {
         }
 
         // internal helper functions:
-        internal static bool VerifyCommand(params string[] keywords) {
-            // check all given keywords are active
-            if (keywords.Length != argKeywords.Count())
-                return false;
-
+        private static bool all(params string[] keywords) {
             foreach (var keyword in keywords)
-                if (!argKeywords.Contains(keyword))
+                if (!arguments.ContainsKey(keyword))
                     return false;
-
             return true;
         }
 
-        internal static bool VerifyOption(string optionName) => arguments[optionName].IsTrue;
+        private static bool any(params string[] keywords) {
+            foreach (var keyword in keywords)
+                if (arguments.ContainsKey(keyword))
+                    return true;
+            return false;
+        }
 
         internal static string TryGetValue(string key, string defaultValue = null) {
             return arguments[key] != null ? arguments[key].Value as string : defaultValue;
@@ -1283,22 +1162,6 @@ namespace pyRevitManager {
             var activeArgs = arguments.Where(x => x.Value != null && (x.Value.IsTrue || x.Value.IsString));
             foreach (var arg in activeArgs)
                 Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
-        }
-
-        private static List<string> ExtractEnabledKeywords(IDictionary<string, ValueObject> arguments) {
-            // grab active keywords
-            var enabledKeywords = new List<string>();
-            foreach (var argument in arguments.OrderBy(x => x.Key)) {
-                if (argument.Value != null
-                        && !argument.Key.Contains("<")
-                        && !argument.Key.Contains(">")
-                        && !argument.Key.Contains("--")
-                        && argument.Value.IsTrue) {
-                    logger.Debug("Active Keyword: {0}", argument.Key);
-                    enabledKeywords.Add(argument.Key);
-                }
-            }
-            return enabledKeywords;
         }
 
         private static void ProcessErrorCodes() {
