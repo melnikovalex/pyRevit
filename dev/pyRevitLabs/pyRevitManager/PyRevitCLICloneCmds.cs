@@ -84,9 +84,9 @@ namespace pyRevitManager {
         }
 
         internal static void
-        RegisterClone(string cloneName, string clonePath) {
+        RegisterClone(string cloneName, string clonePath, bool force) {
             if (clonePath != null)
-                PyRevit.RegisterClone(cloneName, clonePath);
+                PyRevit.RegisterClone(cloneName, clonePath, forceUpdate: force);
         }
 
         internal static void

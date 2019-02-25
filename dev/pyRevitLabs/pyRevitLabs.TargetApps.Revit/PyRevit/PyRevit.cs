@@ -519,7 +519,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 if (allUsersManifest != null) {
                     logger.Debug("pyRevit (All Users) is attached to Revit \"{0}\"", revit.Version);
                     attachment = new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
-                    
+
                 }
                 else if (userManifest != null) {
                     logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
@@ -560,7 +560,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // register a clone in a configs
         // @handled @logs
-        public static void RegisterClone(string cloneName, string repoPath) {
+        public static void RegisterClone(string cloneName, string repoPath, bool forceUpdate = false) {
             var normalPath = repoPath.NormalizeAsPath();
             logger.Debug("Registering clone \"{0}\"", normalPath);
 
@@ -569,14 +569,16 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             var registeredClones = GetRegisteredClones();
             var clone = new PyRevitClone(repoPath, name: cloneName);
+
+            if (forceUpdate && registeredClones.Contains(clone))
+                registeredClones.Remove(clone);
+
             if (!registeredClones.Contains(clone)) {
                 registeredClones.Add(new PyRevitClone(repoPath, name: cloneName));
                 SaveRegisteredClones(registeredClones);
             }
             else
-                throw new pyRevitException(
-                    string.Format("clone with repo path \"{0}\" already exists.", repoPath)
-                    );
+                throw new pyRevitException(string.Format("clone with repo path \"{0}\" already exists.", repoPath));
         }
 
         // renames a clone in a configs

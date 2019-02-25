@@ -221,7 +221,8 @@ namespace pyRevitManager {
                 else if (all("add"))
                     PyRevitCLICloneCmds.RegisterClone(
                         TryGetValue("<clone_name>"),
-                        TryGetValue("<clone_path>")
+                        TryGetValue("<clone_path>"),
+                        force: arguments["--force"].IsTrue
                         );
 
                 else if (all("forget"))
