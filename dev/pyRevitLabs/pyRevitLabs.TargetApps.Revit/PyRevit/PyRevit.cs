@@ -364,11 +364,13 @@ namespace pyRevitLabs.TargetApps.Revit {
             Delete(clone);
 
             // re-deploy
-            DeployFromImage(cloneName: cloneName,
-                              deploymentName: cloneDeployArgs.DeploymentName,
-                              branchName: cloneDeployArgs.BranchName,
-                              imagePath: cloneDeployArgs.Url,
-                              destPath: clonePath);
+            DeployFromImage(
+                cloneName: cloneName,
+                deploymentName: cloneDeployArgs.DeploymentName,
+                branchName: cloneDeployArgs.BranchName,
+                imagePath: cloneDeployArgs.Url,
+                destPath: clonePath
+                );
         }
 
         // uninstall primary or specified clone, has option for clearing configs

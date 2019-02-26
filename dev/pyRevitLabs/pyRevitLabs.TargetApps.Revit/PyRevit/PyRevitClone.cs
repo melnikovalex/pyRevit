@@ -442,9 +442,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 
                 var args = new PyRevitCloneFromImageArgs {
-                    Url = contents[0] == "" ? null : contents[0],
-                    BranchName = contents[1] == "" ? null : contents[1],
-                    DeploymentName = contents[2] == "" ? null : contents[2]
+                    Url = contents[0] == string.Empty ? PyRevitConsts.SourceRepoUrl : contents[0],
+                    BranchName = contents[1] == string.Empty ? PyRevitConsts.OriginalRepoDefaultBranch : contents[1],
+                    DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
 
                 return args;
