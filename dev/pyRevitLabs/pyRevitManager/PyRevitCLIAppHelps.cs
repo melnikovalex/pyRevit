@@ -35,7 +35,7 @@ namespace pyRevitManager {
                 case PyRevitCLICommandType.Main:
                     BuildHelp(
                         null,
-                        header: "Usage: pyrevit COMMAND [ARGS] [OPTIONS]\n\npyRevit environment and clones manager",
+                        header: "Usage: pyrevit COMMAND [OPTIONS]\n\npyRevit environment and clones manager",
                         footer: "Run 'pyrevit COMMAND --help' for more information on a command.",
                         optionsfirst: true,
                         mgmtCommands: new Dictionary<string, string>() {
