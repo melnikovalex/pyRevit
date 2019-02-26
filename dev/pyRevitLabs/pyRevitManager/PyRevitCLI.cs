@@ -176,7 +176,7 @@ namespace pyRevitManager {
 
         // cli argument processor
         private static void ProcessArguments() {
-            if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns);
+            if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns.Replace("\t", "    "));
 
             else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
 
