@@ -440,54 +440,57 @@ namespace pyRevitManager {
             int indent = 25;
             string outputFormat = "        {0,-" + indent.ToString() + "}{1}";
 
+            var helpString = "";
             // header
-            Console.WriteLine(header + Environment.NewLine);
+            helpString += header + Environment.NewLine;
+            helpString += Environment.NewLine;
 
             // build a help guide for a subcommand based on doctop usage entries
             if (docoptKeywords != null) {
                 foreach (var hline in PyRevitCLI.UsagePatterns.GetLines())
                     if (hline.Contains("Usage:"))
-                        Console.WriteLine(hline);
+                        helpString += hline + Environment.NewLine;
                     else
                         foreach (var kword in docoptKeywords) {
                             if ((hline.Contains("pyrevit " + kword + " ") || hline.EndsWith(" " + kword))
                                 && !hline.Contains("pyrevit " + kword + " --help"))
-                                Console.WriteLine("    " + hline.Trim());
+                                helpString += "    " + hline.Trim() + Environment.NewLine;
                         }
-                Console.WriteLine();
-                //Console.WriteLine("    Hints:");
-                //Console.WriteLine(string.Format(outputFormat, "[]", "optional argument or flag"));
-                //Console.WriteLine(string.Format(outputFormat, "(|)", "series of available keywords"));
-                //Console.WriteLine();
+                helpString += Environment.NewLine;
             }
 
             if (optionsfirst)
-                PrintOptions(
+                helpString = BuildOptions(
+                    helpString,
                     header: "    Options:",
                     options: options,
                     outputFormat: outputFormat
                     );
 
-            PrintOptions(
+            helpString = BuildOptions(
+                helpString,
                 header: "    Management Commands:",
                 options: mgmtCommands,
                 outputFormat: outputFormat
                 );
 
-            PrintOptions(
+            helpString = BuildOptions(
+                helpString,
                 header: "    Commands:",
                 options: commands,
                 outputFormat: outputFormat
                 );
 
-            PrintOptions(
+            helpString = BuildOptions(
+                helpString,
                 header: "    Help Commands:",
                 options: helpCommands,
                 outputFormat: outputFormat
                 );
 
             if (!optionsfirst)
-                PrintOptions(
+                helpString = BuildOptions(
+                    helpString,
                     header: "    Arguments & Options:",
                     options: options,
                     outputFormat: outputFormat
@@ -495,19 +498,25 @@ namespace pyRevitManager {
 
             // footer
             if (footer != null)
-                Console.WriteLine(footer + Environment.NewLine);
+                helpString += footer + Environment.NewLine;
+
+            Console.WriteLine(helpString);
         }
 
-        private static void PrintOptions(string header, IDictionary<string, string> options, string outputFormat) {
+        private static string BuildOptions(string baseHelp, string header, IDictionary<string, string> options, string outputFormat) {
             if (options != null) {
-                Console.WriteLine(header);
+                baseHelp += header + Environment.NewLine;
                 foreach (var optionPair in options) {
-                    Console.WriteLine(
+                    baseHelp += 
                         string.Format(outputFormat, optionPair.Key, optionPair.Value)
-                        );
+                        + Environment.NewLine;
                 }
-                Console.WriteLine();
+                baseHelp += Environment.NewLine;
+
+                return baseHelp;
             }
+
+            return baseHelp;
         }
     }
 }
