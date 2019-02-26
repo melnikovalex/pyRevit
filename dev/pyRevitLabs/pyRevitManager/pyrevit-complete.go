@@ -335,6 +335,7 @@ func main() {
 		Flags: complete.Flags{
 			"-V":        complete.PredictNothing,
 			"--version": complete.PredictNothing,
+			"--usage":   complete.PredictNothing,
 		},
 
 		GlobalFlags: complete.Flags{

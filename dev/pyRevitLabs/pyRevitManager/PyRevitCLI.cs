@@ -83,6 +83,7 @@ namespace pyRevitManager {
 
         internal static bool IsVersionMode = false;
         internal static bool IsHelpMode = false;
+        internal static bool IsHelpUsagePatternMode = false;
 
         // cli version property
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
@@ -149,6 +150,9 @@ namespace pyRevitManager {
                 // check if requesting help
                 IsHelpMode = arguments["--help"].IsTrue || arguments["-h"].IsTrue;
 
+                // check if requesting help with full usage patterns
+                IsHelpUsagePatternMode = arguments["--usage"].IsTrue;
+
                 try {
                     // now call methods based on inputs
                     ProcessArguments();
@@ -172,7 +176,9 @@ namespace pyRevitManager {
 
         // cli argument processor
         private static void ProcessArguments() {
-            if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
+            if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns);
+
+            else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
 
             else if (all("help")) PyRevitCLIAppHelps.OpenHelp();
 

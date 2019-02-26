@@ -71,6 +71,7 @@ namespace pyRevitManager {
                         options: new Dictionary<string, string>() {
                             { "-h --help",              "Show this help" },
                             { "-V --version",           "Show version" },
+                            { "--usage",                "Print all usage patterns" },
                             { "--verbose",              "Print info messages" },
                             { "--debug",                "Print docopt options and logger debug messages" },
                             { "--log=<log_file>",       "Output log messages to external log file" },

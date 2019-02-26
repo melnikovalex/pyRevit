@@ -2,11 +2,12 @@ Usage:
     pyrevit help
     pyrevit (-h | --help)
     pyrevit (-V | --version)
+    pyrevit --usage
     pyrevit (blog | docs | source | youtube | support)
     pyrevit env [--json] [--help] [--log=<log_file>]
     pyrevit clone --help
     pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
+    pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
     pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
     pyrevit clones [--help]
     pyrevit clones (info | open) <clone_name>
@@ -53,8 +54,8 @@ Usage:
     pyrevit releases open latest [--pre]
     pyrevit releases open <search_pattern> [--pre]
     pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
-	pyrevit image --help
-	pyrevit image <clone_name> --config=<image_config> --dest=<dest_path>
+    pyrevit image --help
+    pyrevit image <clone_name> --config=<image_config> --dest=<dest_path>
     pyrevit revits --help
     pyrevit revits [--installed] [--log=<log_file>]
     pyrevit revits killall [<revit_year>] [--log=<log_file>]
