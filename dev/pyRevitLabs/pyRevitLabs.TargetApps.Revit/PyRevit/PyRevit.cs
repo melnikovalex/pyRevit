@@ -43,8 +43,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static string pyRevitConfigFilePath {
             get {
                 var cfgFile = FindConfigFileInDirectory(pyRevitAppDataPath);
-                return cfgFile != null ? cfgFile : Path.Combine(pyRevitAppDataPath,
-                                                        PyRevitConsts.DefaultConfigsFileName);
+                return cfgFile != null ? cfgFile : Path.Combine(pyRevitAppDataPath, PyRevitConsts.DefaultConfigsFileName);
             }
         }
 
@@ -1259,6 +1258,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         // copy config file into all users directory as seed config file
+        // create user config file based on a template
         // @handled @logs
         public static void SeedConfig(bool makeCurrentUserAsOwner = false, string setupFromTemplate = null) {
             // if setupFromTemplate is not specified: copy current config into Allusers folder
@@ -1297,6 +1297,15 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         // configurations private access methods  ====================================================================
+        private static void InitConfigFile() {
+            // get allusers seed config file
+            var adminFile = FindConfigFileInDirectory(pyRevitProgramDataPath);
+            if (adminFile != null)
+                SeedConfig(false, setupFromTemplate: adminFile);
+            else
+                CommonUtils.EnsureFile(pyRevitConfigFilePath);
+        }
+
         private static IniFile GetConfigFile() {
             // INI formatting
             var cfgOps = new IniOptions();
@@ -1307,7 +1316,8 @@ namespace pyRevitLabs.TargetApps.Revit {
             // default to current user config
             string configFile = pyRevitConfigFilePath;
             // make sure the file exists and if not create an empty one
-            CommonUtils.EnsureFile(configFile);
+            if (!CommonUtils.VerifyFile(configFile))
+                InitConfigFile();
 
             // load the config file
             cfgFile.Load(configFile);
