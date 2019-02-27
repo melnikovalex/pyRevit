@@ -238,10 +238,11 @@ namespace pyRevitManager {
         internal static void
         ActivateAutoComplete() {
             var processPath = GetProcessPath();
-            var installAutoCompleteCommand = Path.Combine(processPath, autocompleteBinaryName + ".exe");
 
-            logger.Debug("Autocomplete installer is \"{0}\"", installAutoCompleteCommand);
-            ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(installAutoCompleteCommand);
+            var autoCompleteHelperPath = Path.Combine(processPath, autocompleteBinaryName + ".exe");
+            logger.Debug("Autocomplete helper binary is \"{0}\"", autoCompleteHelperPath);
+
+            ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(autoCompleteHelperPath);
             updaterProcessInfo.Arguments = "-install -y";
             updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(processPath);
             updaterProcessInfo.UseShellExecute = false;

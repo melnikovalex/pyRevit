@@ -61,11 +61,9 @@ namespace pyRevitLabs.Common {
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
-        public static string UserTemp {
-            get {
-                return Environment.ExpandEnvironmentVariables("%TEMP%");
-            }
-        }
+        public static string UserHome => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        public static string UserTemp => Environment.ExpandEnvironmentVariables("%TEMP%");
     }
 
 
