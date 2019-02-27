@@ -18,7 +18,7 @@ $packageArgs = @{
   checksum64    = '0655648B5698FC2B9B22B650CC411AF07302A295E9C0C617B143A13447D689E3'
   checksumType64= 'sha256'
 
-  silentArgs    = "/qn"
+  silentArgs    = "/exenoui /exenoupdates /qn"
   validExitCodes= @(0, 3010, 1641)
 }
 
