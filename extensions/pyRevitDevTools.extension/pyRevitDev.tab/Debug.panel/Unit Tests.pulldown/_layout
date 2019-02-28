@@ -11,6 +11,7 @@ Script Module Tests
 Test Engine Stability
 Test Cached Engines
 Test FullFrame Engine
+Test NonModal
 Test pyRevit Button
 Test Output Stream
 Test Multiple Outputs

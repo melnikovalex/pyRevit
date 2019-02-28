@@ -77,6 +77,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test NonModal.pushbutton\NonModalWindow.xaml">
+      <Link>Debug\NonModalWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Usage Records.pushbutton\UsageRecordsWindow.xaml">
       <Link>Debug\UsageRecordsWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
