@@ -2,14 +2,12 @@
 $ErrorActionPreference = 'Stop';
 
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$url64      = 'https://github.com/eirannejad/pyRevit/releases/download/cli-v0.9.0.0/pyRevit.CLI_0.9.0.0_signed.exe'
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
-  unzipLocation = $toolsDir
+  unzipLocation = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
   fileType      = 'exe'
-  url           = $url
-  url64bit      = $url64
+  url64bit      = 'https://github.com/eirannejad/pyRevit/releases/download/cli-v0.9.0.0/pyRevit.CLI_0.9.0.0_signed.exe'
 
   softwareName  = 'pyrevit-cli*'
 
@@ -23,22 +21,3 @@ $packageArgs = @{
 }
 
 Install-ChocolateyPackage @packageArgs
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-

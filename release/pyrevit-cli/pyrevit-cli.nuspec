@@ -3,11 +3,11 @@
   <metadata>
     <id>pyrevit-cli</id>
     <version>0.9.0.0</version>
-    <packageSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/release/pyrevit-cli/</packageSourceUrl>
+    <packageSourceUrl>https://github.com/eirannejad/pyRevit/tree/develop/release/pyrevit-cli/</packageSourceUrl>
     <title>pyRevit CLI</title>
     <authors>Ehsan Iran-Nejad</authors>
     <projectUrl>https://github.com/eirannejad/pyRevit</projectUrl>
-    <iconUrl>https://github.com/eirannejad/pyRevit/tree/master/release/pyrevit-cli/chocoicon.png</iconUrl>
+    <iconUrl>https://github.com/eirannejad/pyRevit/tree/develop/release/pyrevit-cli/chocoicon.png</iconUrl>
     <copyright>(c) 2019 Ehsan Iran-Nejad</copyright>
     <licenseUrl>https://github.com/eirannejad/pyRevit/blob/master/LICENSE.txt</licenseUrl>
     <projectSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/dev/pyRevitLabs</projectSourceUrl>
