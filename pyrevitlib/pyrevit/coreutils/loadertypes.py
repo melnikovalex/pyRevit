@@ -33,6 +33,7 @@ if not EXEC_PARAMS.doc_mode:
 
     # helpers.cs
     UIDocUtils = base_module.UIDocUtils
+    PlaceKeynoteExternalEvent = base_module.PlaceKeynoteExternalEvent
 
     # scriptoutput.cs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
