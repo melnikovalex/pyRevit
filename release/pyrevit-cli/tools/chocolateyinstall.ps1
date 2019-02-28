@@ -5,8 +5,9 @@ $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
-  unzipLocation = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+  unzipLocation = $toolsDir
   fileType      = 'exe'
+  url           = $url
   url64bit      = 'https://github.com/eirannejad/pyRevit/releases/download/cli-v0.9.0.0/pyRevit.CLI_0.9.0.0_signed.exe'
 
   softwareName  = 'pyrevit-cli*'
