@@ -16,6 +16,7 @@ extensions/*
 **/obj
 **/packages
 **/dev/**/bin
+**/dev/pyRevitLabs/TestResults/
 
 # ignore sphinx build files
 docs/_*

@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using pyRevitLabs.TargetApps.Revit;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -7,49 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using pyRevitLabs.Common;
+using pyRevitLabs.Tests;
+using pyRevitLabs.TargetApps.Revit;
 
-// https://docs.microsoft.com/en-us/visualstudio/test/getting-started-with-unit-testing
 namespace pyRevitLabs.TargetApps.Revit.Tests {
     [TestClass()]
-    public class PyRevitTests {
-        #region Utils
-        public static string TempPath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PyRevitLabsTests");
-        #endregion
-        #region Setup and Teardown
-        [AssemblyInitialize()]
-        public static void AssemblyInit(TestContext context) { }
-
-        //https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.testtools.unittesting.classinitializeattribute
-        [ClassInitialize()]
-        public static void ClassInit(TestContext context) { }
-
-        [TestInitialize()]
-        public void Initialize() {
-            if (!Directory.Exists(TempPath))
-                Directory.CreateDirectory(TempPath);
-            else
-                Cleanup();
-        }
-
-        [TestCleanup()]
-        public void Cleanup() {
-            try {
-                CommonUtils.DeleteDirectory(TempPath);
-            }
-            catch {
-
-            }
-        }
-
-        // https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.testtools.unittesting.classcleanupattribute
-        [ClassCleanup()]
-        public static void ClassCleanup() { }
-
-        [AssemblyCleanup()]
-        public static void AssemblyCleanup() { }
-        #endregion
+    public class PyRevitTests: TemplateUnitTest {
+        public override string TempPath =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PyRevitLabsTests-TargetApps-Revit");
 
         private string testCloneName = "TestClone";
 
@@ -68,8 +32,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             var clone = PyRevit.GetRegisteredClone(testCloneName);
             PyRevit.UnregisterClone(clone);
 
-            Assert.AreEqual(testCloneBranch, clone.Branch,
-                           string.Format("{0} != {1}", testCloneBranch, clone.Branch));
+            Assert.AreEqual(testCloneBranch, clone.Branch, string.Format("{0} != {1}", testCloneBranch, clone.Branch));
         }
 
         [TestMethod()]
@@ -88,10 +51,8 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             var clone = PyRevit.GetRegisteredClone(testCloneName);
             PyRevit.UnregisterClone(clone);
 
-            Assert.AreEqual(testCloneDeployment, clone.Deployment.Name,
-                            string.Format("{0} != {1}", testCloneDeployment, clone.Deployment.Name));
-            Assert.AreEqual(testCloneBranch, clone.Branch,
-                            string.Format("{0} != {1}", testCloneBranch, clone.Branch));
+            Assert.AreEqual(testCloneDeployment, clone.Deployment.Name, string.Format("{0} != {1}", testCloneDeployment, clone.Deployment.Name));
+            Assert.AreEqual(testCloneBranch, clone.Branch, string.Format("{0} != {1}", testCloneBranch, clone.Branch));
         }
 
         [TestMethod()]
