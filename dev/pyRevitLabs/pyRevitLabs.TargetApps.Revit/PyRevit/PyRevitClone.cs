@@ -433,11 +433,11 @@ namespace pyRevitLabs.TargetApps.Revit {
         // private:
         private static PyRevitCloneFromImageArgs ReadDeploymentArgs(string clonePath) {
             var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
-            logger.Debug("Reading nogit clone parmeters from \"{0}\"", cloneMemoryFilePath);
+            logger.Debug("Reading image clone parmeters from \"{0}\"", cloneMemoryFilePath);
 
             try {
                 var contents = File.ReadAllLines(cloneMemoryFilePath);
-                logger.Debug("Archive Path: \"{0}\"", contents[0]);
+                logger.Debug("Image Path: \"{0}\"", contents[0]);
                 logger.Debug("Branch: \"{0}\"", contents[1]);
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 

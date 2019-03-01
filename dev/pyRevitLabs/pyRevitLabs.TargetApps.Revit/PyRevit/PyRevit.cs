@@ -348,7 +348,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                                                  string imagePath,
                                                  string clonePath) {
             var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
-            logger.Debug(string.Format("Recording nogit clone parmeters for clone \"{0}\" to \"{1}\"",
+            logger.Debug(string.Format("Recording deploy parameters for image clone \"{0}\" to \"{1}\"",
                                        cloneName, cloneMemoryFilePath));
 
             try {
