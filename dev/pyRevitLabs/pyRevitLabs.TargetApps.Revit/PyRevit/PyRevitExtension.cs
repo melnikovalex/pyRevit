@@ -91,7 +91,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public PyRevitExtensionDefinition Definition { get; private set; } = null;
 
         public override string ToString() {
-            return string.Format("Name: \"{0}\" | Type: \"{1}\" | Repo: \"{2}\" | Installed: \"{3}\"",
+            return string.Format("{0} | Type: {1} | Repo: \"{2}\" | Installed: \"{3}\"",
                                  Name, Type, Url, InstallPath);
         }
 

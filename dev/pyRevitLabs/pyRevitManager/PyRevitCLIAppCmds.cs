@@ -168,7 +168,7 @@ namespace pyRevitManager {
             Console.WriteLine(string.Format("Adming Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("%APPDATA%: \"{0}\"",
                                             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
-            Console.WriteLine(string.Format("Latest Installed .Net Framework: \"{0}\"",
+            Console.WriteLine(string.Format("Latest Installed .Net Framework: {0}",
                                             UserEnv.GetInstalledDotNetVersion()));
             try {
                 string targetPacks = "";
