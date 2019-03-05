@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -128,7 +128,7 @@ namespace pyRevitManager {
                                 { "activeUser", UserEnv.GetLoggedInUserName() },
                                 { "isAdmin", UserEnv.IsRunAsAdmin() },
                                 { "userAppdata", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) },
-                                { "latesFramework", UserEnv.GetInstalledDotNetVersion() },
+                                { "latestFramework", UserEnv.GetInstalledDotNetVersion() },
                                 { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
                                 { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
                                 { "cliVersion", PyRevitCLI.CLIVersion },
