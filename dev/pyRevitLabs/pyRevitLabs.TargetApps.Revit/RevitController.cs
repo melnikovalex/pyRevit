@@ -452,7 +452,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public Version FullVersion {
+        private Version FullVersion {
             get {
                 if (Version != null) {
                     if (Version.Revision >= 0)
@@ -501,9 +501,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public string RegisteredName { get; set; }
+        private string RegisteredName { get; set; }
 
-        public string RegisteredVersion { get; set; }
+        private string RegisteredVersion { get; set; }
 
         public string InstallLocation {
             get {
@@ -655,7 +655,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProcess> ListRunningRevits(int revitYear) {
             var runningRevits = new List<RevitProcess>();
             foreach (RevitProcess revit in ListRunningRevits()) {
-                if (revit.RevitProduct.FullVersion.Major == revitYear)
+                if (revit.RevitProduct.ProductYear == revitYear)
                     runningRevits.Add(revit);
             }
             return runningRevits;
