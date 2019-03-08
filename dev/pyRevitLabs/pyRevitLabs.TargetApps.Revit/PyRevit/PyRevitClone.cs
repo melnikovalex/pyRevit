@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Reflection;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -428,6 +429,17 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<PyRevitExtension> GetExtensions(string clonePath) {
             VerifyCloneValidity(clonePath);
             return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+        }
+
+        // check if given assembly belongs to pyrevit
+        public static bool IsPyRevitAssembly(Assembly assm) {
+            try {
+                var clone = new PyRevitClone(Path.GetDirectoryName(assm.Location));
+                return true;
+            }
+            catch {
+                return false;
+            }
         }
 
         // private:
