@@ -13,6 +13,7 @@ from collections import defaultdict
 from pyrevit import HOST_APP
 from pyrevit import framework
 from pyrevit.framework import System
+from pyrevit.coreutils import loadertypes
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
@@ -26,6 +27,8 @@ import keynotesdb as kdb
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
 __context__ = ""
+__cleanengine__ = True
+
 
 logger = script.get_logger()
 output = script.get_output()
@@ -333,7 +336,9 @@ class EditRecordWindow(forms.WPFWindow):
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name, reset_config=False):
+    def __init__(self, xaml_file_name,
+                 reset_config=False,
+                 ext_event=None, ext_event_handler=None):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # verify keynote file existence
@@ -387,6 +392,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             else:
                 forms.alert("Keynote file is not yet converted.",
                             exitscript=True)
+
+        # keep the external event object for later
+        self._ext_event = ext_event
+        self._ext_event_handler = ext_event_handler
 
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
@@ -960,26 +969,36 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 print(report)
 
     def place_keynote(self, sender, args):
-        self.Close()
+        # grab the keynote type and selected keynote key
         keynotes_cat = \
             revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
-        if keynotes_cat and self.selected_keynote:
-            knote_key = self.selected_keynote.key
-            def_kn_typeid = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
-            kn_type = revit.doc.GetElement(def_kn_typeid)
-            if kn_type:
-                uidoc_utils = UIDocUtils(HOST_APP.uiapp)
-                # place keynotes and get placed keynote elements
-                try:
-                    uidoc_utils.PostCommandAndUpdateNewElementProperties(
-                        revit.doc,
-                        self.postable_keynote_command,
-                        "Update Keynotes",
-                        DB.BuiltInParameter.KEY_VALUE,
-                        knote_key
-                        )
-                except Exception as ex:
-                    forms.alert(str(ex))
+        def_kn_typeid = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
+
+        # if document has a type for keynotes
+        kn_type = revit.doc.GetElement(def_kn_typeid)
+        if kn_type:
+            knote_type = self.postable_keynote_command
+            if keynotes_cat and self.selected_keynote:
+                knote_key = self.selected_keynote.key
+
+                if self._ext_event and self._ext_event_handler:
+                    self._ext_event_handler.KeynoteKey = knote_key
+                    self._ext_event_handler.KeynoteType = knote_type
+                    self._ext_event.Raise()
+                else:
+                    self.Close()
+                    uidoc_utils = UIDocUtils(HOST_APP.uiapp)
+                    # place keynotes and get placed keynote elements
+                    try:
+                        uidoc_utils.PostCommandAndUpdateNewElementProperties(
+                            revit.doc,
+                            knote_type,
+                            "Update Keynotes",
+                            DB.BuiltInParameter.KEY_VALUE,
+                            knote_key
+                            )
+                    except Exception as ex:
+                        forms.alert(str(ex))
 
     def enable_history(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -1064,9 +1083,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
 
 try:
+    extevent_hndlr = loadertypes.PlaceKeynoteExternalEvent()
     KeynoteManagerWindow(
         xaml_file_name='KeynoteManagerWindow.xaml',
-        reset_config=__shiftclick__ #pylint: disable=undefined-variable
-        ).show(modal=True)
+        reset_config=__shiftclick__, #pylint: disable=undefined-variable
+        ext_event=UI.ExternalEvent.Create(extevent_hndlr),
+        ext_event_handler=extevent_hndlr
+        ).show(modal=False)
 except Exception as kmex:
     forms.alert(str(kmex))
