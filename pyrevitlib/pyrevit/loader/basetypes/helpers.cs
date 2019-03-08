@@ -226,22 +226,19 @@ namespace PyRevitBaseClasses
     }
 
     public class PlaceKeynoteExternalEvent : IExternalEventHandler {
-        private string _keynoteValue = null;
-        private PostableCommand _keynoteCommand = PostableCommand.UserKeynote;
+        public string KeynoteKey = null;
+        public PostableCommand KeynoteType = PostableCommand.UserKeynote;
 
-        public PlaceKeynoteExternalEvent(string keynoteValue, PostableCommand keynoteCommand) {
-            _keynoteValue = keynoteValue;
-            _keynoteCommand = keynoteCommand;
-        }
+        public PlaceKeynoteExternalEvent() {}
 
         public void Execute(UIApplication app) {
             var docutils = new UIDocUtils(app);
             docutils.PostCommandAndUpdateNewElementProperties(
                 app.ActiveUIDocument.Document,
-                _keynoteCommand,
+                KeynoteType,
                 "Update",
                 BuiltInParameter.KEY_VALUE,
-                _keynoteValue
+                KeynoteKey
                 );
         }
 

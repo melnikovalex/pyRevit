@@ -1,28 +1,32 @@
 """Testing non-modal windows calling actions thru external events."""
 # pylint: skip-file
-from pyrevit import revit, DB, UI
-from pyrevit.framework import System
 from pyrevit import forms
-from pyrevit import script
-
-from pyrevit.coreutils.loadertypes import UIDocUtils, PlaceKeynoteExternalEvent
+from pyrevit import UI
+from pyrevit.coreutils import loadertypes
 
 
 class NonModalWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name):
+    def __init__(self, xaml_file_name, ext_event, ext_event_handler):
         forms.WPFWindow.__init__(self, xaml_file_name)
+        self.ext_event = ext_event
+        self.ext_event_handler = ext_event_handler
 
     def action(self, sender, args):
+        from pyrevit import UI
+        from pyrevit import forms
+
         if __shiftclick__:
             self.Close()
             forms.alert("Stuff")
         else:
-            # waitEvent = System.Threading.AutoResetEvent(False)
-            extevhandler = \
-                PlaceKeynoteExternalEvent("18", UI.PostableCommand.UserKeynote)
-            extev = UI.ExternalEvent.Create(extevhandler)
-            extev.Raise()
-            # waitEvent.WaitOne()
+            self.ext_event_handler.KeynoteKey = "12"
+            self.ext_event_handler.KeynoteType = UI.PostableCommand.UserKeynote
+            self.ext_event.Raise()
 
+handler = loadertypes.PlaceKeynoteExternalEvent()
 
-NonModalWindow('NonModalWindow.xaml').show(modal=__shiftclick__)
+NonModalWindow(
+    'NonModalWindow.xaml',
+    ext_event=UI.ExternalEvent.Create(handler),
+    ext_event_handler=handler
+    ).show(modal=__shiftclick__)
