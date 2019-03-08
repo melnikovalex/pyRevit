@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Reflection;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -430,14 +431,25 @@ namespace pyRevitLabs.TargetApps.Revit {
             return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
         }
 
+        // check if given assembly belongs to pyrevit
+        public static bool IsPyRevitAssembly(Assembly assm) {
+            try {
+                var clone = new PyRevitClone(Path.GetDirectoryName(assm.Location));
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
         // private:
         private static PyRevitCloneFromImageArgs ReadDeploymentArgs(string clonePath) {
             var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
-            logger.Debug("Reading nogit clone parmeters from \"{0}\"", cloneMemoryFilePath);
+            logger.Debug("Reading image clone parmeters from \"{0}\"", cloneMemoryFilePath);
 
             try {
                 var contents = File.ReadAllLines(cloneMemoryFilePath);
-                logger.Debug("Archive Path: \"{0}\"", contents[0]);
+                logger.Debug("Image Path: \"{0}\"", contents[0]);
                 logger.Debug("Branch: \"{0}\"", contents[1]);
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 

@@ -20,6 +20,16 @@ using Newtonsoft.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitManager {
+    public class JsonVersionConverter : JsonConverter<Version> {
+        public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer) {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteJson(JsonWriter writer, Version value, JsonSerializer serializer) {
+            writer.WriteValue(value.ToString());
+        }
+    }
+
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -118,7 +128,7 @@ namespace pyRevitManager {
                                 { "activeUser", UserEnv.GetLoggedInUserName() },
                                 { "isAdmin", UserEnv.IsRunAsAdmin() },
                                 { "userAppdata", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) },
-                                { "latesFramework", UserEnv.GetInstalledDotNetVersion() },
+                                { "latestFramework", UserEnv.GetInstalledDotNetVersion() },
                                 { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
                                 { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
                                 { "cliVersion", PyRevitCLI.CLIVersion },
@@ -126,14 +136,15 @@ namespace pyRevitManager {
                         },
                     };
 
-            return JsonConvert.SerializeObject(
-                        jsonData,
-                        new JsonSerializerSettings {
-                            Error = delegate (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) {
-                                args.ErrorContext.Handled = true;
-                            },
-                            ContractResolver = new CamelCasePropertyNamesContractResolver()
-                        });
+            var jsonExportCfg = new JsonSerializerSettings {
+                Error = delegate (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) {
+                    args.ErrorContext.Handled = true;
+                },
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            };
+            jsonExportCfg.Converters.Add(new JsonVersionConverter());
+
+            return JsonConvert.SerializeObject(jsonData, jsonExportCfg);
         }
 
         internal static void
@@ -168,7 +179,7 @@ namespace pyRevitManager {
             Console.WriteLine(string.Format("Adming Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("%APPDATA%: \"{0}\"",
                                             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
-            Console.WriteLine(string.Format("Latest Installed .Net Framework: \"{0}\"",
+            Console.WriteLine(string.Format("Latest Installed .Net Framework: {0}",
                                             UserEnv.GetInstalledDotNetVersion()));
             try {
                 string targetPacks = "";

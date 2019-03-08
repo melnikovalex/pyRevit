@@ -421,6 +421,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             {"20180806_1515", ("19.1.0.112",    "2019.1")},
             {"20181217_1515", ("19.2.0.65",     "2019.2 (Update)")},
             {"20190108_1515", ("19.2.1.1",      "2019.2 (Full Install)")}, // reported by: https://twitter.com/JarodJSchultz/status/1100459171491676160
+            {"20190225_1515", ("19.2.10.7",     "2019.2.1")}, // release notes https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_1_Readme.html
         };
 
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
@@ -452,7 +453,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public Version FullVersion {
+        private Version FullVersion {
             get {
                 if (Version != null) {
                     if (Version.Revision >= 0)
@@ -501,9 +502,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public string RegisteredName { get; set; }
+        private string RegisteredName { get; set; }
 
-        public string RegisteredVersion { get; set; }
+        private string RegisteredVersion { get; set; }
 
         public string InstallLocation {
             get {
@@ -655,7 +656,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProcess> ListRunningRevits(int revitYear) {
             var runningRevits = new List<RevitProcess>();
             foreach (RevitProcess revit in ListRunningRevits()) {
-                if (revit.RevitProduct.FullVersion.Major == revitYear)
+                if (revit.RevitProduct.ProductYear == revitYear)
                     runningRevits.Add(revit);
             }
             return runningRevits;

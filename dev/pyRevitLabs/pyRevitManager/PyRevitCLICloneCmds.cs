@@ -292,7 +292,7 @@ namespace pyRevitManager {
             int revitYearNumber = 0;
             if (installed)
                 foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevit.Attach(revit.FullVersion.Major, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevit.Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevit.GetAttachments())
                     PyRevit.Attach(attachment.Product.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);

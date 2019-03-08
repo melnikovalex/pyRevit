@@ -39,6 +39,17 @@ GRAPHICAL_VIEWTYPES = [
     ]
 
 
+DETAIL_CURVES = (DB.DetailLine,
+                 DB.DetailArc,
+                 DB.DetailEllipse,
+                 DB.DetailNurbSpline)
+
+MODEL_CURVES = (DB.ModelLine,
+                DB.ModelArc,
+                DB.ModelEllipse,
+                DB.ModelNurbSpline)
+
+
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
 SheetRefInfo = namedtuple('SheetRefInfo',
@@ -947,6 +958,14 @@ def get_used_keynotes(doc=None):
              .ToElements()
 
 
+def get_visible_keynotes(view=None):
+    doc = view.Document
+    return DB.FilteredElementCollector(doc, view.Id)\
+             .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+
+
 def get_available_keynotes(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
@@ -1107,3 +1126,17 @@ def get_history(target_element):
         return ElementHistory(creator=wti.Creator,
                               owner=wti.Owner,
                               last_changed_by=wti.LastChangedBy)
+
+
+def is_detail_curve(element):
+    return isinstance(element, DETAIL_CURVES)
+
+
+def is_model_curve(element):
+    return isinstance(element, MODEL_CURVES)
+
+
+def is_sketch_curve(element):
+    if element.Category:
+        cid = element.Category.Id
+        return cid == DB.ElementId(DB.BuiltInCategory.OST_SketchLines)

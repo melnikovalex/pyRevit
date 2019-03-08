@@ -21,7 +21,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public override string ToString() {
             return string.Format(
-                "{0} | Product: \"{1}\" | Engine: \"{2}\" | Path: \"{3}\" | Manifest: \"{4}\"",
+                "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
                 Clone.Name,
                 Product.ProductName,
                 Engine.Version,

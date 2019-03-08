@@ -93,6 +93,15 @@ namespace pyRevitLabs.TargetApps.Revit {
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
 
+            // check existing destination path
+            if (CommonUtils.VerifyPath(destPath)) {
+                logger.Debug("Destination path already exists {0}", destPath);
+                destPath = Path.Combine(destPath, cloneName);
+                logger.Debug("Using subpath {0}", destPath);
+                if (CommonUtils.VerifyPath(destPath))
+                    throw new pyRevitException(string.Format("Destination path already exists \"{0}\"", destPath));
+            }
+
             // start the clone process
             LibGit2Sharp.Repository repo = null;
             if (deploymentName != null) {
@@ -339,7 +348,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                                                  string imagePath,
                                                  string clonePath) {
             var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
-            logger.Debug(string.Format("Recording nogit clone parmeters for clone \"{0}\" to \"{1}\"",
+            logger.Debug(string.Format("Recording deploy parameters for image clone \"{0}\" to \"{1}\"",
                                        cloneName, cloneMemoryFilePath));
 
             try {
@@ -604,10 +613,15 @@ namespace pyRevitLabs.TargetApps.Revit {
             foreach (var cloneKeyValue in clonesList) {
                 var clonePath = cloneKeyValue.Value.NormalizeAsPath();
                 if(CommonUtils.VerifyPath(clonePath)) {
-                    var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
-                    if (clone.IsValid && !validatedClones.Contains(clone)) {
-                        logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
-                        validatedClones.Add(clone);
+                    try {
+                        var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
+                        if (clone.IsValid && !validatedClones.Contains(clone)) {
+                            logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
+                            validatedClones.Add(clone);
+                        }
+                    }
+                    catch {
+                        logger.Debug("Error occured when processing registered clone \"{0}\" at \"{1}\"", cloneKeyValue.Key, clonePath);
                     }
                 }
             }

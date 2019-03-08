@@ -39,8 +39,54 @@ EDIT_MODE_ADD_KEYNOTE = 'add-keynote'
 EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
 
 
+CSI_REGEX = r' \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}'
 
-RKeynoteFilter = namedtuple('RKeynoteFilter', ['name', 'code'])
+
+class RKeynoteFilter(object):
+    """Keynote smart filter."""
+
+    def __init__(self, name, code):
+        self.name = name
+        self.code = code
+
+    def format_term(self, exst_term):
+        """Format existing search term for this filter"""
+        # grab clearn existing
+        exst_term = RKeynoteFilters.remove_filters(exst_term)
+        # add space so user can type after
+        return self.code + " " + exst_term
+
+
+class RKeynoteRegexFilter(RKeynoteFilter):
+    """Keynote smart regular expressions filter."""
+
+    def __init__(self,
+                 name="Regular Expression (Regex)",
+                 regex=None,
+                 negate=False):
+        self.name = (name + "{}").format(" [Exclude]" if negate else "")
+        self.code = ":notregex:" if negate else ":regex:"
+        self.regex = regex or ""
+
+    def format_term(self, exst_term):
+        """Format existing search term for this filter"""
+        # add space so user can type after
+        return self.code + " " + self.regex
+
+
+class RKeynoteViewFilter(RKeynoteFilter):
+    """Keynote smart regular expressions filter."""
+
+    def __init__(self):
+        self.name = "Current View Only"
+        self.code = ":view:"
+        self.keys = []
+
+    def __contains__(self, knote_key):
+        return knote_key in self.keys
+
+    def set_keys(self, valid_keys):
+        self.keys = valid_keys
 
 
 class RKeynoteFilters(object):
@@ -50,8 +96,18 @@ class RKeynoteFilters(object):
     UnusedOnly = RKeynoteFilter(name="Unused Only", code=":unused:")
     LockedOnly = RKeynoteFilter(name="Locked Only", code=":locked:")
     UnlockedOnly = RKeynoteFilter(name="Unlocked Only", code=":unlocked:")
-    UseRegex = RKeynoteFilter(name="Use Regular Expressions (Regex)",
-                              code=":regex:")
+    ViewOnly = RKeynoteViewFilter()
+    UseRegex = RKeynoteRegexFilter()
+    UseRegexNegate = RKeynoteRegexFilter(negate=True)
+    UseCSI = RKeynoteRegexFilter(
+        name="CSI MasterFormat Division No.",
+        regex=CSI_REGEX
+        )
+    UseCSINegate = RKeynoteRegexFilter(
+        name="CSI MasterFormat Division No.",
+        regex=CSI_REGEX,
+        negate=True
+        )
 
     @classmethod
     def get_available_filters(cls):
@@ -60,7 +116,11 @@ class RKeynoteFilters(object):
                 cls.UnusedOnly,
                 cls.LockedOnly,
                 cls.UnlockedOnly,
-                cls.UseRegex
+                cls.ViewOnly,
+                cls.UseRegex,
+                cls.UseRegexNegate,
+                cls.UseCSI,
+                cls.UseCSINegate
                 ]
 
     @classmethod
@@ -110,11 +170,16 @@ class RKeynote(object):
     def filter(self, search_term):
         self._filter = search_term.lower()
 
+        self_pass = False
+
         # use regex for string matching?
         use_regex = RKeynoteFilters.UseRegex.code in self._filter
+        use_regex_not = RKeynoteFilters.UseRegexNegate.code in self._filter
 
-        self_pass = False
-        if RKeynoteFilters.UsedOnly.code in self._filter:
+        if RKeynoteFilters.ViewOnly.code in self._filter:
+            self_pass = self.key in RKeynoteFilters.ViewOnly
+
+        elif RKeynoteFilters.UsedOnly.code in self._filter:
             self_pass = self.used
 
         elif RKeynoteFilters.UnusedOnly.code in self._filter:
@@ -134,7 +199,7 @@ class RKeynote(object):
             sterm = sterm.lower()
 
             # here is where matching against the string happens
-            if use_regex:
+            if use_regex or use_regex_not:
                 # check if pattern is valid
                 try:
                     self_pass = re.search(
@@ -144,6 +209,8 @@ class RKeynote(object):
                         )
                 except Exception:
                     self_pass = False
+                if use_regex_not:
+                    self_pass = not self_pass
             else:
                 self_pass_keyword = \
                     coreutils.fuzzy_search_ratio(sterm, cleaned_sfilter) > 80

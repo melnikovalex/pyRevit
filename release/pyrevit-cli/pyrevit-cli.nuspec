@@ -3,11 +3,11 @@
   <metadata>
     <id>pyrevit-cli</id>
     <version>0.9.0.0</version>
-    <packageSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/release/pyrevit-cli/</packageSourceUrl>
+    <packageSourceUrl>https://github.com/eirannejad/pyRevit/tree/develop/release/pyrevit-cli/</packageSourceUrl>
     <title>pyRevit CLI</title>
     <authors>Ehsan Iran-Nejad</authors>
     <projectUrl>https://github.com/eirannejad/pyRevit</projectUrl>
-    <iconUrl>https://github.com/eirannejad/pyRevit/tree/master/release/pyrevit-cli/chocoicon.png</iconUrl>
+    <iconUrl>https://github.com/eirannejad/pyRevit/tree/develop/release/pyrevit-cli/chocoicon.png</iconUrl>
     <copyright>(c) 2019 Ehsan Iran-Nejad</copyright>
     <licenseUrl>https://github.com/eirannejad/pyRevit/blob/master/LICENSE.txt</licenseUrl>
     <projectSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/dev/pyRevitLabs</projectSourceUrl>
@@ -17,7 +17,6 @@
     <summary>pyRevit Command Line Tool </summary>
     <description>pyrevit cli is the command line tool, developed specifically to install
 and configure pyRevit in your production/development environment.
-Each section below showcases a specific set of functionality of the command line tool.
 </description>
     <releaseNotes>https://github.com/eirannejad/pyRevit/releases/tag/cli-v0.9.0.0</releaseNotes>
     <dependencies>
