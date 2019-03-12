@@ -494,8 +494,12 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path, arguments=None, sys_paths=None,
-                   clean_engine=True, fullframe_engine=True):
+def execute_script(script_path,
+                   arguments=None,
+                   sys_paths=None,
+                   clean_engine=True,
+                   fullframe_engine=True,
+                   persistent_engine=False):
     """Executes a script using pyRevit script executor.
 
     Args:
@@ -532,6 +536,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             cmdUniqueName=None,
             needsCleanEngine=clean_engine,
             needsFullFrameEngine=fullframe_engine,
+            needPersistentEngine=persistent_engine,
             refreshEngine=False,
             forcedDebugMode=False,
             altScriptMode=False,

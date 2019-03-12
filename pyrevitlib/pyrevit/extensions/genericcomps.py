@@ -306,6 +306,7 @@ class GenericUICommand(GenericUIComponent):
         self.beta_cmd = False
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
+        self.requires_persistent_engine = False
 
     def __init_from_dir__(self, cmd_dir):   #pylint: disable=W0221
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
@@ -429,6 +430,8 @@ class GenericUICommand(GenericUIComponent):
                 exts.CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
             self.requires_fullframe_engine = script_content.extract_param(
                 exts.FULLFRAME_ENGINE_PARAM, False)  # type: bool
+            self.requires_persistent_engine = script_content.extract_param(
+                exts.PERSISTENT_ENGINE_PARAM, False)  # type: bool
 
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)

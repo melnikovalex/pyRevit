@@ -82,12 +82,15 @@ namespace PyRevitBaseClasses
             }
             finally
             {   
-                // clean the scope unless the script is requesting clean engine
-                // this is a temporary convention to allow users to keep global references in the scope
-                if (!pyrvtCmd.NeedsCleanEngine)
+                // clean the scope and engines unless the script is requesting persistent engine
+                if (!pyrvtCmd.NeedsPersistentEngine) {
+                    // cleaning removes all references to revit content that's been casualy stored in global-level
+                    // variables and prohibit the GC from cleaning them up and releasing memory
                     CleanupScope(engine, scope);
 
-                engineMgr.CleanupEngine(engine);
+                    // ask engine manager to clean the engine and its stdin/stdout streams
+                    engineMgr.CleanupEngine(engine);
+                }
             }
         }
 
@@ -100,9 +103,10 @@ namespace PyRevitBaseClasses
 
         public void CleanupScope(ScriptEngine engine, ScriptScope scope)
         {
-            var script = engine.CreateScriptSourceFromString("for __deref in dir():\n" +
-                                                             "    if not __deref.startswith('__'):\n" +
-                                                             "        del globals()[__deref]");
+            var script = engine.CreateScriptSourceFromString(
+                "for __deref in dir():\n" +
+                "    if not __deref.startswith('__') and not isinstance(__deref, type):\n" +
+                "        del globals()[__deref]");
             script.Compile();
             script.Execute(scope);
         }

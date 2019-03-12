@@ -22,6 +22,7 @@ namespace PyRevitBaseClasses {
         private string _cmdUniqueName = null;
         private bool _needsCleanEngine = false;
         private bool _needsFullFrameEngine = false;
+        private bool _needPersistentEngine = false;
 
         private bool _refreshEngine = false;
         private bool _forcedDebugMode = false;
@@ -53,6 +54,7 @@ namespace PyRevitBaseClasses {
                                      string cmdUniqueName,
                                      bool needsCleanEngine,
                                      bool needsFullFrameEngine,
+                                     bool needPersistentEngine,
                                      bool refreshEngine,
                                      bool forcedDebugMode,
                                      bool altScriptMode,
@@ -70,8 +72,9 @@ namespace PyRevitBaseClasses {
             _cmdBundle = cmdBundle;
             _cmdExtension = cmdExtension;
             _cmdUniqueName = cmdUniqueName;
-            _needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
-            _needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
+            _needsCleanEngine = needsCleanEngine;
+            _needsFullFrameEngine = needsFullFrameEngine;
+            _needPersistentEngine = needPersistentEngine;
 
             _refreshEngine = refreshEngine;
             _forcedDebugMode = forcedDebugMode;
@@ -186,6 +189,12 @@ namespace PyRevitBaseClasses {
         public bool NeedsFullFrameEngine {
             get {
                 return _needsFullFrameEngine;
+            }
+        }
+
+        public bool NeedsPersistentEngine {
+            get {
+                return _needPersistentEngine;
             }
         }
 

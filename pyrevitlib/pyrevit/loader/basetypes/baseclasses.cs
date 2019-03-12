@@ -30,6 +30,7 @@ namespace PyRevitBaseClasses {
         public string baked_cmdUniqueName = null;
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
+        public bool baked_needPersistentEngine = false;
 
         // unlike fullframe or clean engine modes, the alternate script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
@@ -56,7 +57,8 @@ namespace PyRevitBaseClasses {
                               string cmdExtension,
                               string cmdUniqueName,
                               int needsCleanEngine,
-                              int needsFullFrameEngine) {
+                              int needsFullFrameEngine,
+                              int needPersistentEngine) {
             baked_scriptSource = scriptSource;
             baked_alternateScriptSource = alternateScriptSource;
             baked_syspaths = syspaths;
@@ -67,6 +69,7 @@ namespace PyRevitBaseClasses {
             baked_cmdUniqueName = cmdUniqueName;
             baked_needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
             baked_needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
+            baked_needPersistentEngine = Convert.ToBoolean(needPersistentEngine);
         }
 
 
@@ -117,6 +120,12 @@ namespace PyRevitBaseClasses {
                 fullFrameEngineStatus.Header = string.Format("Requests FullFrame Engine: {0}", baked_needsFullFrameEngine ? "Yes" : "No");
                 fullFrameEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
+
+                // use a disabled menu item to show if the command requires persistent engine
+                MenuItem persistentEngineStatus = new MenuItem();
+                persistentEngineStatus.Header = string.Format("Requests Persistent Engine: {0}", baked_needPersistentEngine ? "Yes" : "No");
+                persistentEngineStatus.IsEnabled = false;
+                pyRevitCmdContextMenu.Items.Add(persistentEngineStatus);
 
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
@@ -214,6 +223,7 @@ namespace PyRevitBaseClasses {
                                                             cmdUniqueName: baked_cmdUniqueName,
                                                             needsCleanEngine: baked_needsCleanEngine,
                                                             needsFullFrameEngine: baked_needsFullFrameEngine,
+                                                            needPersistentEngine: baked_needPersistentEngine,
                                                             refreshEngine: _refreshEngine,
                                                             forcedDebugMode: _forcedDebugMode,
                                                             altScriptMode: _altScriptMode,

@@ -94,8 +94,11 @@ def _make_python_types(extension, module_builder, cmd_component):
     mlogger.debug('%s uses clean engine: %s',
                   cmd_component.name, use_clean_engine)
 
-    mlogger.debug('%s requires Fullframe engine: %s',
+    mlogger.debug('%s requires full-frame engine: %s',
                   cmd_component.name, cmd_component.requires_fullframe_engine)
+
+    mlogger.debug('%s requires persistent engine: %s',
+                  cmd_component.name, cmd_component.requires_persistent_engine)
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
@@ -108,7 +111,8 @@ def _make_python_types(extension, module_builder, cmd_component):
                 extension.name,
                 cmd_component.unique_name,
                 int(use_clean_engine),
-                int(cmd_component.requires_fullframe_engine))
+                int(cmd_component.requires_fullframe_engine),
+                int(cmd_component.requires_persistent_engine))
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)
     cmd_component.class_name = cmd_component.unique_name

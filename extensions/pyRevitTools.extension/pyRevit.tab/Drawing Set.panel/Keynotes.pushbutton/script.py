@@ -27,7 +27,7 @@ import keynotesdb as kdb
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
 __context__ = ""
-__cleanengine__ = True
+__persistentengine__ = True
 
 
 logger = script.get_logger()

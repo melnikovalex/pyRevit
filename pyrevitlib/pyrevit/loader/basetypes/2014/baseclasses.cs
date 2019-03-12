@@ -7,6 +7,7 @@ using Autodesk.Revit.Attributes;
 using System.Windows.Input;
 using System.Windows.Controls;
 
+using Python.Runtime;
 
 namespace PyRevitBaseClasses {
     public enum ExtendedAvailabilityTypes {
@@ -29,6 +30,7 @@ namespace PyRevitBaseClasses {
         public string baked_cmdUniqueName = null;
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
+        public bool baked_needPersistentEngine = false;
 
         // unlike fullframe or clean engine modes, the alternate script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
@@ -55,7 +57,8 @@ namespace PyRevitBaseClasses {
                               string cmdExtension,
                               string cmdUniqueName,
                               int needsCleanEngine,
-                              int needsFullFrameEngine) {
+                              int needsFullFrameEngine,
+                              int needPersistentEngine) {
             baked_scriptSource = scriptSource;
             baked_alternateScriptSource = alternateScriptSource;
             baked_syspaths = syspaths;
@@ -66,6 +69,7 @@ namespace PyRevitBaseClasses {
             baked_cmdUniqueName = cmdUniqueName;
             baked_needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
             baked_needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
+            baked_needPersistentEngine = Convert.ToBoolean(needPersistentEngine);
         }
 
 
@@ -100,6 +104,7 @@ namespace PyRevitBaseClasses {
                 if (baked_helpSource != null && baked_helpSource != "") {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
+                    openHelpSource.ToolTip = baked_helpSource;
                     openHelpSource.Click += delegate { System.Diagnostics.Process.Start(baked_helpSource); };
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
@@ -116,9 +121,16 @@ namespace PyRevitBaseClasses {
                 fullFrameEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
 
+                // use a disabled menu item to show if the command requires persistent engine
+                MenuItem persistentEngineStatus = new MenuItem();
+                persistentEngineStatus.Header = string.Format("Requests Persistent Engine: {0}", baked_needPersistentEngine ? "Yes" : "No");
+                persistentEngineStatus.IsEnabled = false;
+                pyRevitCmdContextMenu.Items.Add(persistentEngineStatus);
+
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
+                copyScriptPath.ToolTip = _script;
                 copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
@@ -126,14 +138,17 @@ namespace PyRevitBaseClasses {
                 if (baked_alternateScriptSource != null && baked_alternateScriptSource != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
                     copyAltScriptPath.Header = "Copy Alternate Script Path";
+                    copyAltScriptPath.ToolTip = baked_alternateScriptSource;
                     copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_alternateScriptSource); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
                 // menu item to copy bundle path to clipboard
+                var bundlePath = Path.GetDirectoryName(_script);
                 MenuItem copyBundlePath = new MenuItem();
                 copyBundlePath.Header = "Copy Bundle Path";
-                copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(Path.GetDirectoryName(_script)); };
+                copyBundlePath.ToolTip = bundlePath;
+                copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(bundlePath); };
                 pyRevitCmdContextMenu.Items.Add(copyBundlePath);
 
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
@@ -148,6 +163,15 @@ namespace PyRevitBaseClasses {
                 copySysPaths.Header = "Copy Sys Paths";
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_syspaths.Replace(";", "\r\n")); };
                 pyRevitCmdContextMenu.Items.Add(copySysPaths);
+
+                // menu item to copy help url
+                MenuItem copyHelpSource = new MenuItem();
+                copyHelpSource.Header = "Copy Help Url";
+                copyHelpSource.ToolTip = baked_helpSource;
+                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource.Replace(";", "\r\n")); };
+                pyRevitCmdContextMenu.Items.Add(copyHelpSource);
+                if (baked_helpSource == null || baked_helpSource == string.Empty)
+                    copyHelpSource.IsEnabled = false;
 
                 // open the menu
                 pyRevitCmdContextMenu.IsOpen = true;
@@ -199,6 +223,7 @@ namespace PyRevitBaseClasses {
                                                             cmdUniqueName: baked_cmdUniqueName,
                                                             needsCleanEngine: baked_needsCleanEngine,
                                                             needsFullFrameEngine: baked_needsFullFrameEngine,
+                                                            needPersistentEngine: baked_needPersistentEngine,
                                                             refreshEngine: _refreshEngine,
                                                             forcedDebugMode: _forcedDebugMode,
                                                             altScriptMode: _altScriptMode,
@@ -208,24 +233,49 @@ namespace PyRevitBaseClasses {
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Execute and log results
             // Executing the script and logging the results
+            if (pyrvtCmdRuntime.IsPython3) {
+                using (Py.GIL()) {
+                    // initialize
+                    if (!PythonEngine.IsInitialized)
+                        PythonEngine.Initialize();
 
-            // Get script executor and Execute the script
-            var executor = new ScriptExecutor();
-            pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
+                    // set output stream
+                    dynamic sys = PythonEngine.ImportModule("sys");
+                    sys.stdout = pyrvtCmdRuntime.OutputStream;
 
-            // Log results
-            ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
+                    // set uiapplication
+                    sys.host = pyrvtCmdRuntime.UIApp;
 
-            // GC cleanups
-            var re = pyrvtCmdRuntime.ExecutionResult;
-            pyrvtCmdRuntime.Dispose();
-            pyrvtCmdRuntime = null;
+                    // run
+                    var scriptContents = File.ReadAllText(pyrvtCmdRuntime.ScriptSourceFile);
+                    PythonEngine.Exec(scriptContents);
 
-            // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-            if (re == 0)
-                return Result.Succeeded;
-            else
-                return Result.Cancelled;
+                    // shutdown halts and breaks Revit
+                    // let's not do that!
+                    // PythonEngine.Shutdown();
+
+                    return Result.Succeeded;
+                }
+            }
+            else {
+                // Get script executor and Execute the script
+                var executor = new ScriptExecutor();
+                pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
+
+                // Log results
+                ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
+
+                // GC cleanups
+                var re = pyrvtCmdRuntime.ExecutionResult;
+                pyrvtCmdRuntime.Dispose();
+                pyrvtCmdRuntime = null;
+
+                // Return results to Revit. Don't report errors since we don't want Revit popup with error results
+                if (re == 0)
+                    return Result.Succeeded;
+                else
+                    return Result.Cancelled;
+            }
             #endregion
         }
     }
@@ -307,7 +357,7 @@ namespace PyRevitBaseClasses {
             }
 
             // assume that the remaining tokens are category names and create a comparison string
-            if(contextTokens.Count > 0) {
+            if (contextTokens.Count > 0) {
                 contextTokens.Sort();
                 _contextCatNameCompareString = string.Join("", contextTokens);
             }
