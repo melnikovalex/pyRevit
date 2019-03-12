@@ -336,9 +336,7 @@ class EditRecordWindow(forms.WPFWindow):
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name,
-                 reset_config=False,
-                 ext_event=None, ext_event_handler=None):
+    def __init__(self, xaml_file_name, reset_config=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # verify keynote file existence
@@ -393,9 +391,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Keynote file is not yet converted.",
                             exitscript=True)
 
-        # keep the external event object for later
-        self._ext_event = ext_event
-        self._ext_event_handler = ext_event_handler
+        # create external event objects
+        # __init__ methods is being executed on the Revit thread and happens
+        # before the non-modal .show() that creates a separate UI thread
+        # evenet handlers need to be created here since they are not allowed
+        # to be instantiated from threads other than main
+        self._ext_event_handler = loadertypes.PlaceKeynoteExternalEvent()
+        self._ext_event = UI.ExternalEvent.Create(self._ext_event_handler)
 
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
@@ -1083,12 +1085,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
 
 try:
-    extevent_hndlr = loadertypes.PlaceKeynoteExternalEvent()
     KeynoteManagerWindow(
         xaml_file_name='KeynoteManagerWindow.xaml',
         reset_config=__shiftclick__, #pylint: disable=undefined-variable
-        ext_event=UI.ExternalEvent.Create(extevent_hndlr),
-        ext_event_handler=extevent_hndlr
         ).show(modal=False)
 except Exception as kmex:
     forms.alert(str(kmex))
