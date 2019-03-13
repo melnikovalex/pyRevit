@@ -227,9 +227,13 @@ namespace PyRevitBaseClasses {
                 // get ScriptOutput from the weak reference
                 ScriptOutput output;
                 var re = _scriptOutput.TryGetTarget(out output);
-                if (re && output != null)
+                // create a new output window if there is none, or previous is closed by user
+                if (re && output != null && !output.ClosedByUser)
                     return output;
                 else {
+                    // cleanup reference
+                    output = null;
+
                     // Stating a new output window
                     var newOutput = new ScriptOutput(DebugMode, UIApp);
 

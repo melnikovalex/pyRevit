@@ -407,8 +407,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._needs_update = False
         self._config = script.get_config()
-        self._used_keysdict = self.get_used_keynote_elements()
-        self.load_config(reset_config)
+        self._load_config(reset_config)
         self.search_tb.Focus()
 
     @property
@@ -491,6 +490,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return []
 
     @property
+    def used_keynotes(self):
+        return self._get_used_keynote_elements()
+
+    @property
     def current_keynotes(self):
         return self.keynotes_tv.ItemsSource
 
@@ -498,14 +501,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def keynote_text_with(self):
         return 200
 
-    def get_used_keynote_elements(self):
+    def _get_used_keynote_elements(self):
         used_keys = defaultdict(list)
         for knote in revit.query.get_used_keynotes(doc=revit.doc):
             key = knote.Parameter[DB.BuiltInParameter.KEY_VALUE].AsString()
             used_keys[key].append(knote.Id)
         return used_keys
 
-    def save_config(self):
+    def _save_config(self):
         # save self.window_geom
         new_window_geom_dict = {}
         # cleanup removed keynote files
@@ -546,7 +549,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         script.save_config()
 
-    def load_config(self, reset_config):
+    def _load_config(self, reset_config):
         # load last window geom
         if reset_config:
             last_window_geom_dict = {}
@@ -681,7 +684,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # mark used keynotes
         for knote in active_tree:
-            knote.update_used(self._used_keysdict)
+            knote.update_used(self.used_keynotes)
 
         # filter keynotes
         self._cache = list(active_tree)
@@ -696,6 +699,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # show keynotes
         self.keynotes_tv.ItemsSource = filtered_keynotes
+
+    # gui event handlers
 
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
@@ -943,9 +948,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def show_keynote(self, sender, args):
         if self.selected_keynote:
-            self.Close()
-            kids = self.get_used_keynote_elements() \
-                       .get(self.selected_keynote.key, [])
+            # self.Close()
+            kids = self.used_keynotes.get(self.selected_keynote.key, [])
             for kid in kids:
                 source = viewname = ''
                 kel = revit.doc.GetElement(kid)
@@ -980,7 +984,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         kn_type = revit.doc.GetElement(def_kn_typeid)
         if kn_type:
             knote_type = self.postable_keynote_command
-            if keynotes_cat and self.selected_keynote:
+            if self.selected_keynote and self.selected_keynote.parent_key:
                 knote_key = self.selected_keynote.key
 
                 if self._ext_event and self._ext_event_handler:
@@ -1071,7 +1075,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 revit.update.update_linked_keynotes(doc=revit.doc)
 
         try:
-            self.save_config()
+            self._save_config()
         except Exception as saveex:
             logger.debug('Saving configuration failed | %s' % saveex)
             forms.alert(str(saveex))

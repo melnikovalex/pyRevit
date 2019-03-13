@@ -261,14 +261,16 @@ namespace PyRevitBaseClasses {
                 // Get script executor and Execute the script
                 var executor = new ScriptExecutor();
                 pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
+                var re = pyrvtCmdRuntime.ExecutionResult;
 
                 // Log results
                 ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
 
                 // GC cleanups
-                var re = pyrvtCmdRuntime.ExecutionResult;
-                pyrvtCmdRuntime.Dispose();
-                pyrvtCmdRuntime = null;
+                if (!pyrvtCmdRuntime.NeedsPersistentEngine) {
+                    pyrvtCmdRuntime.Dispose();
+                    pyrvtCmdRuntime = null;
+                }
 
                 // Return results to Revit. Don't report errors since we don't want Revit popup with error results
                 if (re == 0)

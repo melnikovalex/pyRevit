@@ -88,10 +88,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\2013\baseclasses.cs">
-      <Link>baseclasses.cs</Link>
+      <Link>2013\baseclasses.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\2013\scriptoutputhelpers.cs">
-      <Link>scriptoutputhelpers.cs</Link>
+      <Link>2013\scriptoutputhelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses_dyno.cs">
       <Link>baseclasses_dyno.cs</Link>
