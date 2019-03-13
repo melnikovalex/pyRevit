@@ -108,7 +108,6 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <None Include="pyrevit-complete.go" />
     <None Include="pyrevit.manifest">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -191,9 +190,6 @@ REM del /Q "$(TargetDir)*.pdb"
 REM del /Q "$(TargetDir)*.config"
 REM del /Q "$(TargetDir)*.xml"
 echo Signing binaries
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"
-echo Generating autcomplete helper binary
-go get github.com/posener/complete/gocomplete
-go build -o "$(TargetDir)/pyrevit-complete.exe" "$(ProjectDir)/pyrevit-complete.go"</PostBuildEvent>
+signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
