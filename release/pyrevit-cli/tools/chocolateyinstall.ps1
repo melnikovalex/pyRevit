@@ -7,11 +7,11 @@ $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
   unzipLocation = $toolsDir
   fileType      = 'exe'
-  url           = 'https://github.com/eirannejad/pyRevit/releases/download/cli-v0.9.0.0/pyRevit.CLI_0.9.0.0_signed.exe'
+  url           = 'https://github.com/eirannejad/pyRevit/releases/download/cli-v0.9.6.0/pyRevit.CLI_0.9.6.0_signed.exe'
 
   softwareName  = 'pyrevit-cli*'
 
-  checksum      = '0655648B5698FC2B9B22B650CC411AF07302A295E9C0C617B143A13447D689E3'
+  checksum      = 'DEDF4BE7DAE8EC7E72C100EBA244B2F992BD2DF33F8360B1CB263221A7133E6C'
   checksumType  = 'sha256'
 
   silentArgs    = "/exenoui /exenoupdates /qn"
