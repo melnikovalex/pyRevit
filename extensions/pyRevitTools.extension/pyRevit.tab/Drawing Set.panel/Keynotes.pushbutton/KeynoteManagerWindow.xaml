@@ -293,11 +293,6 @@
                             ToolTip="Show keynote file."
                             Click="show_keynote_file"/>
                 </Grid>
-                <Button Content="Update Model"
-                        Margin="0,10,0,0"
-                        Padding="8,4,8,4"
-                        ToolTip="Reloads keynote file and updates keynotes per changes"
-                        Click="update_model"/>
             </StackPanel>
             <ScrollViewer VerticalScrollBarVisibility="Hidden">
                 <StackPanel>

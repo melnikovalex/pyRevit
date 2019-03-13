@@ -700,6 +700,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # show keynotes
         self.keynotes_tv.ItemsSource = filtered_keynotes
 
+    def _update_model(self):
+        pass
+        # if self._needs_update:
+        #     with revit.Transaction('Update Keynotes'):
+        #         revit.update.update_linked_keynotes(doc=revit.doc)
+
     # gui event handlers
 
     def search_txt_changed(self, sender, args):
@@ -1017,8 +1023,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def change_keynote_file(self, sender, args):
         if self._change_kfile():
-            # make sure to relaod on close
-            self._needs_update = True
+            self._update_model()
             self.Close()
 
     def show_keynote_file(self, sender, args):
@@ -1066,14 +1071,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
 
-    def update_model(self, sender, args):
-        self.Close()
-
     def window_closing(self, sender, args):
-        if self._needs_update:
-            with revit.Transaction('Update Keynotes'):
-                revit.update.update_linked_keynotes(doc=revit.doc)
-
         try:
             self._save_config()
         except Exception as saveex:
