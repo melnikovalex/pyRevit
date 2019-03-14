@@ -37,7 +37,7 @@ if not EXEC_PARAMS.doc_mode:
 from pyrevit.extensions.parser import parse_dir_for_ext_type,\
     get_parsed_extension, parse_comp_dir
 from pyrevit.extensions.genericcomps import GenericUICommand
-from pyrevit.extensions.components import Extension, LibraryExtension
+from pyrevit.extensions import components
 
 import pyrevit.extensions.extpackages as extpkgs
 
@@ -139,13 +139,36 @@ def get_thirdparty_extension_data():
 
     for root_dir in user_config.get_thirdparty_ext_root_dirs():
         ext_data_list.extend(
-            [ui_ext for ui_ext in parse_dir_for_ext_type(root_dir,
-                                                         Extension)])
+            [x for x in parse_dir_for_ext_type(
+                root_dir,
+                components.Extension
+                )])
         ext_data_list.extend(
-            [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir,
-                                                           LibraryExtension)])
+            [x for x in parse_dir_for_ext_type(
+                root_dir,
+                components.LibraryExtension
+                )])
 
     return _remove_disabled_extensions(ext_data_list)
+
+
+def get_installed_theme_extensions(root_dir):
+    """
+    Returns a list of all Theme extensions (not parsed)
+    under the given directory that are installed and active.
+
+    Args:
+        root_dir (str): Extensions directory address
+
+    Returns:
+        list: list of components.ThemeExtension objects
+    """
+    lib_ext_list = \
+        [x for x in parse_dir_for_ext_type(
+            root_dir,
+            components.ThemeExtension
+            )]
+    return _remove_disabled_extensions(lib_ext_list)
 
 
 def get_installed_lib_extensions(root_dir):
@@ -160,8 +183,10 @@ def get_installed_lib_extensions(root_dir):
         list: list of components.LibraryExtension objects
     """
     lib_ext_list = \
-        [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir,
-                                                       LibraryExtension)]
+        [x for x in parse_dir_for_ext_type(
+            root_dir,
+            components.LibraryExtension
+            )]
     return _remove_disabled_extensions(lib_ext_list)
 
 
@@ -176,7 +201,9 @@ def get_installed_ui_extensions():
     """
     ui_ext_list = []
     lib_ext_list = []
+    theme_ext_list = []
 
+    # FIXME: SIMPLIFY! all extensions need to be found in one pass
     # get a list of all directories that could include extensions
     ext_search_dirs = user_config.get_ext_root_dirs()
     mlogger.debug('Extension Directories: %s', ext_search_dirs)
@@ -189,8 +216,17 @@ def get_installed_ui_extensions():
         # _parser.parse_dir_for_ext_type() returns a list of extensions
         # in given directory
 
+    # collect all theme extensions. the icons will replace the standard icons
+    # or ui extension tools depending on which theme is selected by user
+    # TODO: check user selected theme
+    active_theme = None
     for root_dir in ext_search_dirs:
-        for ext_info in parse_dir_for_ext_type(root_dir, Extension):
+        theme_ext_list.extend(get_installed_theme_extensions(root_dir))
+    active_theme = theme_ext_list[0]
+
+    # now search for ui extensions that contain the tools
+    for root_dir in ext_search_dirs:
+        for ext_info in parse_dir_for_ext_type(root_dir, components.Extension):
             # test if cache is valid for this ui_extension
             # it might seem unusual to create a ui_extension and then
             # re-load it from cache but minimum information about the
@@ -215,9 +251,14 @@ def get_installed_ui_extensions():
     # over paths added by this method (they're the first paths added to the
     # search paths list, and these paths will follow)
     for ui_extension in ui_ext_list:
-        _update_extension_syspaths(ui_extension,
-                                   lib_ext_list,
-                                   [MAIN_LIB_DIR,
-                                    MISC_LIB_DIR])
+        _update_extension_syspaths(
+            ui_extension,
+            lib_ext_list,
+            [MAIN_LIB_DIR, MISC_LIB_DIR]
+            )
+
+        if active_theme:
+            # update theme now
+            ui_extension.apply_theme(active_theme)
 
     return ui_ext_list

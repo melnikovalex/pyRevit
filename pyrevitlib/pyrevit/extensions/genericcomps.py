@@ -15,6 +15,8 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 LayoutDirective = namedtuple('LayoutDirective', ['type', 'item', 'target'])
 
+ContainerTheme = namedtuple('ContainerTheme', ['icon_file'])
+
 
 class GenericComponent(object):
     type_id = None
@@ -242,6 +244,14 @@ class GenericUIContainer(GenericUIComponent):
         else:
             return None
 
+    def set_theme(self, container_themes):
+        theme = container_themes.get(self.unique_name, None)
+        if theme:
+            mlogger.debug('Setting theme: %s on %s', theme, self)
+            self.icon_file = theme.icon_file
+        for component in self.get_components():
+            component.set_theme(container_themes)
+
     def add_component(self, comp):
         for path in self.syspath_search_paths:
             comp.add_syspath(path)
@@ -302,6 +312,7 @@ class GenericUICommand(GenericUIComponent):
         self.doc_string = self.author = None
         self.cmd_help_url = self.cmd_context = None
         self.unique_name = self.unique_avail_name = None
+        self.icon_file = None
         self.class_name = self.avail_class_name = None
         self.beta_cmd = False
         self.requires_clean_engine = False
@@ -506,6 +517,12 @@ class GenericUICommand(GenericUIComponent):
         if path and not self.has_syspath(path):
             mlogger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
+
+    def set_theme(self, container_themes):
+        theme = container_themes.get(self.unique_name, None)
+        if theme:
+            mlogger.debug('Setting theme: %s on %s', theme, self)
+            self.icon_file = theme.icon_file
 
     def configure(self, config_dict):
         templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)

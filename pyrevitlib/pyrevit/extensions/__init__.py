@@ -22,10 +22,16 @@ class RUNExtensionType:
     POSTFIX = '.run'
 
 
+class THEMEExtensionType:
+    ID = 'theme'
+    POSTFIX = '.theme'
+
+
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
     RUN_EXTENSION = RUNExtensionType
+    THEME_EXTENSION = THEMEExtensionType
 
     @classmethod
     def get_ext_types(cls):
@@ -39,6 +45,11 @@ class ExtensionTypes:
     def is_cli_ext(cls, ext_type):
         """Check if this is a pyRevit CLI extension."""
         return ext_type == cls.RUN_EXTENSION
+
+    @classmethod
+    def is_theme_ext(cls, ext_type):
+        """Check if this is a pyRevit theme extension."""
+        return ext_type == cls.THEME_EXTENSION
 
 
 # UI_EXTENSION_POSTFIX components

@@ -1,4 +1,5 @@
 """Base classes for pyRevit extension components."""
+import os
 import os.path as op
 import json
 import codecs
@@ -8,9 +9,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
-from pyrevit.extensions.genericcomps import GenericComponent
-from pyrevit.extensions.genericcomps import GenericUIContainer
-from pyrevit.extensions.genericcomps import GenericUICommand
+from pyrevit.extensions import genericcomps
 from pyrevit.versionmgr import get_pyrevit_version
 
 
@@ -23,19 +22,19 @@ mlogger = get_logger(__name__)
 # Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks,
 # Commands, or Command groups
 # ------------------------------------------------------------------------------
-class NoButton(GenericUICommand):
+class NoButton(genericcomps.GenericUICommand):
     type_id = exts.NOGUI_COMMAND_POSTFIX
 
 
-class LinkButton(GenericUICommand):
+class LinkButton(genericcomps.GenericUICommand):
     type_id = exts.LINK_BUTTON_POSTFIX
 
     def __init__(self):
-        GenericUICommand.__init__(self)
+        genericcomps.GenericUICommand.__init__(self)
         self.assembly = self.command_class = None
 
     def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir)
+        genericcomps.GenericUICommand.__init_from_dir__(self, cmd_dir)
         self.assembly = self.command_class = None
         try:
             # reading script file content to extract parameters
@@ -56,19 +55,19 @@ class LinkButton(GenericUICommand):
                       self.assembly, self.command_class)
 
 
-class PushButton(GenericUICommand):
+class PushButton(genericcomps.GenericUICommand):
     type_id = exts.PUSH_BUTTON_POSTFIX
 
 
-class PanelPushButton(GenericUICommand):
+class PanelPushButton(genericcomps.GenericUICommand):
     type_id = exts.PANEL_PUSH_BUTTON_POSTFIX
 
 
-class ToggleButton(GenericUICommand):
+class ToggleButton(genericcomps.GenericUICommand):
     type_id = exts.TOGGLE_BUTTON_POSTFIX
 
     def __init__(self):
-        GenericUICommand.__init__(self)
+        genericcomps.GenericUICommand.__init__(self)
         self.icon_on_file = self.icon_off_file = None
         if self.name:
             mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
@@ -78,7 +77,7 @@ class ToggleButton(GenericUICommand):
                               .format(self.name))
 
     def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir)
+        genericcomps.GenericUICommand.__init_from_dir__(self, cmd_dir)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ON_ICON_FILE)
         self.icon_on_file = \
@@ -96,14 +95,14 @@ class ToggleButton(GenericUICommand):
                               .format(self.name))
 
 
-class SmartButton(GenericUICommand):
+class SmartButton(genericcomps.GenericUICommand):
     type_id = exts.SMART_BUTTON_POSTFIX
 
 
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
-class GenericUICommandGroup(GenericUIContainer):
-    allowed_sub_cmps = [GenericUICommand]
+class GenericUICommandGroup(genericcomps.GenericUIContainer):
+    allowed_sub_cmps = [genericcomps.GenericUICommand]
 
     def has_commands(self):
         for component in self:
@@ -124,8 +123,8 @@ class SplitButtonGroup(GenericUICommandGroup):
 
 
 # Stacks include GenericUICommand, or GenericUICommandGroup
-class GenericStack(GenericUIContainer):
-    allowed_sub_cmps = [GenericUICommandGroup, GenericUICommand]
+class GenericStack(genericcomps.GenericUIContainer):
+    allowed_sub_cmps = [GenericUICommandGroup, genericcomps.GenericUICommand]
 
     def has_commands(self):
         for component in self:
@@ -146,9 +145,10 @@ class StackTwoButtonGroup(GenericStack):
 
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
-class Panel(GenericUIContainer):
+class Panel(genericcomps.GenericUIContainer):
     type_id = exts.PANEL_POSTFIX
-    allowed_sub_cmps = [GenericStack, GenericUICommandGroup, GenericUICommand]
+    allowed_sub_cmps = \
+        [GenericStack, GenericUICommandGroup, genericcomps.GenericUICommand]
 
     def has_commands(self):
         for component in self:
@@ -166,7 +166,7 @@ class Panel(GenericUIContainer):
         # Button groups, contain and display their sub components in their
         # own drop down menu. So when checking if panel has a button,
         # panel should check all the items visible to the user and respond.
-        item_exists = GenericUIContainer.contains(self, item_name)
+        item_exists = genericcomps.GenericUIContainer.contains(self, item_name)
         if item_exists:
             return True
         else:
@@ -178,7 +178,7 @@ class Panel(GenericUIContainer):
 
 
 # Tabs include Panels
-class Tab(GenericUIContainer):
+class Tab(genericcomps.GenericUIContainer):
     type_id = exts.TAB_POSTFIX
     allowed_sub_cmps = [Panel]
 
@@ -191,18 +191,18 @@ class Tab(GenericUIContainer):
 
 # UI Tools extension class
 # ------------------------------------------------------------------------------
-class Extension(GenericUIContainer):
+class Extension(genericcomps.GenericUIContainer):
     type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
     def __init__(self):
-        GenericUIContainer.__init__(self)
+        genericcomps.GenericUIContainer.__init__(self)
         self.author = None
         self.version = None
         self.pyrvt_version = self.dir_hash_value = None
 
     def __init_from_dir__(self, package_dir):   #pylint: disable=W0221
-        GenericUIContainer.__init_from_dir__(self, package_dir)
+        genericcomps.GenericUIContainer.__init_from_dir__(self, package_dir)
         self.pyrvt_version = get_pyrevit_version().get_formatted()
 
         self.dir_hash_value = self._read_dir_hash()
@@ -230,6 +230,10 @@ class Extension(GenericUIContainer):
     #         except Exception:
     #             return False
     #     return False
+
+    @property
+    def startup_script(self):
+        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
 
     def _read_dir_hash(self):
         if self.hash_cache:
@@ -270,7 +274,7 @@ class Extension(GenericUIContainer):
         return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
     def get_all_commands(self):
-        return self.get_components_of_type(GenericUICommand)
+        return self.get_components_of_type(genericcomps.GenericUICommand)
 
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
@@ -293,18 +297,20 @@ class Extension(GenericUIContainer):
             for cmd in self.get_all_commands():
                 cmd.configure(cfg_dict)
 
-    @property
-    def startup_script(self):
-        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
+    def apply_theme(self, theme_ext):
+        mlogger.debug('Applying theme ext: %s on %s', theme_ext, self)
+        container_themes = theme_ext.get_container_themes()
+        for component in self.get_components():
+            component.set_theme(container_themes)
 
 
-# library extension class
+# other extension class
 # ------------------------------------------------------------------------------
-class LibraryExtension(GenericComponent):
+class LibraryExtension(genericcomps.GenericComponent):
     type_id = exts.ExtensionTypes.LIB_EXTENSION.POSTFIX
 
     def __init__(self):
-        GenericComponent.__init__(self)
+        genericcomps.GenericComponent.__init__(self)
         self.directory = None
 
     def __init_from_dir__(self, ext_dir):
@@ -317,3 +323,37 @@ class LibraryExtension(GenericComponent):
     def __repr__(self):
         return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
             .format(self.type_id, self.name, self.directory)
+
+
+class ThemeExtension(genericcomps.GenericComponent):
+    type_id = exts.ExtensionTypes.THEME_EXTENSION.POSTFIX
+
+    def __init__(self):
+        genericcomps.GenericComponent.__init__(self)
+        self.directory = None
+        self._icons = {}
+
+    def __init_from_dir__(self, ext_dir):
+        if not ext_dir.endswith(self.type_id):
+            raise PyRevitException('Can not initialize from directory: {}'
+                                   .format(ext_dir))
+        self.directory = ext_dir
+        self.name = op.splitext(op.basename(self.directory))[0]
+        self._icons = {}
+        self._process_contents()
+
+    def __repr__(self):
+        return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
+            .format(self.type_id, self.name, self.directory)
+
+    def _process_contents(self):
+        for direntry in os.listdir(self.directory):
+            if direntry.lower().endswith(exts.ICON_FILE_FORMAT):
+                unique_name = op.splitext(op.basename(direntry))[0]
+                self._icons[unique_name] = \
+                    genericcomps.ContainerTheme(
+                        icon_file=op.join(self.directory, direntry)
+                        )
+
+    def get_container_themes(self):
+        return self._icons
