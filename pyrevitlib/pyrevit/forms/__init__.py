@@ -1930,7 +1930,7 @@ def pick_folder(title=None):
         fb_dlg = CPDialogs.CommonOpenFileDialog()
         fb_dlg.IsFolderPicker = True
         if title:
-            fb_dlg.Description = title
+            fb_dlg.Title = title
         if fb_dlg.ShowDialog() == CPDialogs.CommonFileDialogResult.Ok:
             return fb_dlg.FileName
     else:
@@ -1939,7 +1939,6 @@ def pick_folder(title=None):
             fb_dlg.Description = title
         if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
             return fb_dlg.SelectedPath
-
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
