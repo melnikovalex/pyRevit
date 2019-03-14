@@ -351,8 +351,8 @@ class ThemeExtension(genericcomps.GenericComponent):
             unique_name = op.splitext(op.basename(direntry))[0]
             direntry_path = op.join(self.directory, direntry)
             if op.isdir(direntry_path):
+                icon_file = None
                 for bundle_file in os.listdir(direntry_path):
-                    icon_file = None
                     if bundle_file.lower().endswith(exts.ICON_FILE_FORMAT):
                         icon_file = op.join(direntry_path, bundle_file)
 
