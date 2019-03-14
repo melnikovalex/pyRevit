@@ -218,11 +218,13 @@ def get_installed_ui_extensions():
 
     # collect all theme extensions. the icons will replace the standard icons
     # or ui extension tools depending on which theme is selected by user
-    # TODO: check user selected theme
     active_theme = None
     for root_dir in ext_search_dirs:
         theme_ext_list.extend(get_installed_theme_extensions(root_dir))
-    active_theme = theme_ext_list[0]
+
+    # TODO: check user selected theme
+    if theme_ext_list:
+        active_theme = theme_ext_list[0]
 
     # now search for ui extensions that contain the tools
     for root_dir in ext_search_dirs:

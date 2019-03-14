@@ -15,7 +15,7 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 LayoutDirective = namedtuple('LayoutDirective', ['type', 'item', 'target'])
 
-ContainerTheme = namedtuple('ContainerTheme', ['icon_file'])
+ContainerTheme = namedtuple('ContainerTheme', ['theme_path', 'icon_file'])
 
 
 class GenericComponent(object):
@@ -126,6 +126,7 @@ class GenericUIContainer(GenericUIComponent):
         self._sub_components = []
         self.layout = self.layout_items = None
         self.name = self.ui_title = None
+        self.theme = None
 
     def __init_from_dir__(self, ext_dir):
         GenericUIComponent.__init_from_dir__(self, ext_dir)
@@ -152,6 +153,8 @@ class GenericUIContainer(GenericUIComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
             mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
+
+        self.theme = None
 
     def __iter__(self):
         return iter(self._get_components_per_layout())
@@ -245,10 +248,10 @@ class GenericUIContainer(GenericUIComponent):
             return None
 
     def set_theme(self, container_themes):
-        theme = container_themes.get(self.unique_name, None)
-        if theme:
-            mlogger.debug('Setting theme: %s on %s', theme, self)
-            self.icon_file = theme.icon_file
+        self.theme = container_themes.get(self.unique_name, None)
+        mlogger.debug('Setting theme: %s on %s', self.theme, self)
+        if self.theme and self.theme.icon_file:
+            self.icon_file = self.theme.icon_file
         for component in self.get_components():
             component.set_theme(container_themes)
 
@@ -519,10 +522,10 @@ class GenericUICommand(GenericUIComponent):
             self.syspath_search_paths.append(path)
 
     def set_theme(self, container_themes):
-        theme = container_themes.get(self.unique_name, None)
-        if theme:
-            mlogger.debug('Setting theme: %s on %s', theme, self)
-            self.icon_file = theme.icon_file
+        self.theme = container_themes.get(self.unique_name, None)
+        mlogger.debug('Setting theme: %s on %s', self.theme, self)
+        if self.theme and self.theme.icon_file:
+            self.icon_file = self.theme.icon_file
 
     def configure(self, config_dict):
         templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)
