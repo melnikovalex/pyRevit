@@ -2,10 +2,9 @@
     "builtin": "True",
     "type": "theme",
     "name": "pyRevitColorfulIcons",
-    "description": "Colourful icons theme for pyRevit",
+    "description": "Colourful icons theme for pyRevit based on v4.4 icons",
     "author": "Ehsan Iran-Nejad",
     "author_profile": "https://keybase.io/ein",
     "url": "https://github.com/eirannejad/pyRevit.git",
-    "website": "http://eirannejad.github.io/pyRevit/",
-    "image": ""
+    "website": "http://eirannejad.github.io/pyRevit/"
 }
