@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>pyrevit-cli</id>
-    <version>0.9.6.0</version>
+    <version>0.9.7.0</version>
     <packageSourceUrl>https://github.com/eirannejad/pyRevit/tree/develop/release/pyrevit-cli/</packageSourceUrl>
     <title>pyRevit CLI</title>
     <authors>Ehsan Iran-Nejad</authors>
@@ -18,7 +18,7 @@
     <description>pyrevit cli is the command line tool, developed specifically to install
 and configure pyRevit in your production/development environment.
 </description>
-    <releaseNotes>https://github.com/eirannejad/pyRevit/releases/tag/cli-v0.9.6.0</releaseNotes>
+    <releaseNotes>https://github.com/eirannejad/pyRevit/releases/tag/cli-v0.9.7.0</releaseNotes>
     <dependencies>
       <dependency id="dotnet4.7.1" version="4.7.2558.0" />
       <dependency id="dotnetcore-runtime" version="2.0.7" />
