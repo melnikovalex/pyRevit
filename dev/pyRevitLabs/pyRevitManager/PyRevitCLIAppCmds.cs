@@ -157,8 +157,8 @@ namespace pyRevitManager {
                 PyRevitCLIExtensionCmds.PrintExtensions();
                 PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
                 PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
-                PyRevitCLIRevitCmds.PrintRevits();
-                PyRevitCLIRevitCmds.PrintRevits(running: true);
+                PyRevitCLIRevitCmds.PrintLocalRevits();
+                PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
                 PrinUserEnv();
             }
         }

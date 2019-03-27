@@ -57,7 +57,7 @@ Usage:
 	pyrevit image --help
 	pyrevit image <clone_name> --config=<image_config> --dest=<dest_path>
 	pyrevit revits --help
-	pyrevit revits [--installed] [--log=<log_file>]
+	pyrevit revits [(--installed|--supported)] [--log=<log_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>]
 	pyrevit revits addons [--help]

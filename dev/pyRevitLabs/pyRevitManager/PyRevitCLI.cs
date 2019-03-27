@@ -509,8 +509,11 @@ namespace pyRevitManager {
                 else if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
 
+                else if (arguments["--supported"].IsTrue)
+                    PyRevitCLIRevitCmds.PrintSupportedRevits();
+
                 else
-                    PyRevitCLIRevitCmds.PrintRevits(running: arguments["--installed"].IsFalse);
+                    PyRevitCLIRevitCmds.PrintLocalRevits(running: arguments["--installed"].IsFalse);
             }
 
             else if (all("run")) {

@@ -24,7 +24,7 @@ namespace pyRevitManager {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         internal static void
-        PrintRevits(bool running = false) {
+        PrintLocalRevits(bool running = false) {
             if (running) {
                 PyRevitCLIAppCmds.PrintHeader("Running Revit Instances");
                 foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version))
@@ -35,6 +35,13 @@ namespace pyRevitManager {
                 foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version))
                     Console.WriteLine(revit);
             }
+        }
+
+        internal static void
+        PrintSupportedRevits() {
+            PyRevitCLIAppCmds.PrintHeader("Supported Revits");
+            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
+                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
         }
 
         internal static void

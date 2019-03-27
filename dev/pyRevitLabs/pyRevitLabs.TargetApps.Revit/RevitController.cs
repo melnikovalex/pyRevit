@@ -642,6 +642,12 @@ namespace pyRevitLabs.TargetApps.Revit {
             return installedRevits.ToList();
         }
 
+        public static List<RevitProduct> ListSupportedProducts() {
+            var installedRevits = new HashSet<RevitProduct>();
+            foreach(var regProduct in _revitBuildNumberLookupTable)
+                installedRevits.Add(LookupRevitProduct(regProduct.Key));
+            return installedRevits.ToList();
+        }
     }
 
 
