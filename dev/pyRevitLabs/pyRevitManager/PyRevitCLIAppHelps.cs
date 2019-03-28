@@ -302,6 +302,7 @@ namespace pyRevitManager {
                             { "<file_or_dir_path>",     "Target file or directory" },
                             { "--csv=<output_file>",    "Output csv file path" },
                             { "--installed",            "Installed Revits only" },
+                            { "--supported",            "Supported Revits only" },
                         });
                     break;
 
