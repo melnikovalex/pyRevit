@@ -64,9 +64,6 @@
     <Compile Include="Security.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="DotNetVersionFinder">
       <Version>1.1.0</Version>
     </PackageReference>

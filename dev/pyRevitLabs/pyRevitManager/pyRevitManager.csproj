@@ -44,15 +44,15 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <DebugSymbols>true</DebugSymbols>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
@@ -186,9 +186,9 @@
 echo Cleaning up build files
 copy "$(TargetDir)lib\win32\x64\git2-572e4d8.dll" "$(TargetDir)git2-572e4d8.dll"
 rd /S /Q "$(TargetDir)lib"
-REM del /Q "$(TargetDir)*.pdb"
-REM del /Q "$(TargetDir)*.config"
-REM del /Q "$(TargetDir)*.xml"
+del /Q "$(TargetDir)*.pdb"
+del /Q "$(TargetDir)*.config"
+del /Q "$(TargetDir)*.xml"
 echo Signing binaries
 signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
