@@ -243,18 +243,6 @@ namespace pyRevitLabs.TargetApps.Revit {
             throw new pyRevitException("Clone path can not be null.");
         }
 
-        // return true of false for clone validity
-        public static bool IsCloneValid(string clonePath) {
-            try {
-                VerifyCloneValidity(clonePath);
-                return true;
-            }
-            catch (Exception ex){
-                logger.Debug("Invalid pyRevit clone. | {0}", ex.Message);
-                return false;
-            }
-        }
-
         // get clone from manifest file
         public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
             return new PyRevitClone(manifest.Assembly);
