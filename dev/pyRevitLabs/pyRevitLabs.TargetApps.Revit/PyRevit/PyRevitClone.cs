@@ -60,6 +60,22 @@ namespace pyRevitLabs.TargetApps.Revit {
                 Name = string.Format("Unnamed-{0}", ClonePath.GenerateHash().GetHashShort());
         }
 
+        private PyRevitClone(string clonePath) {
+            // clone path could be any path inside or outside the clonePath
+            // find the clone root first
+            var _clonePath = FindValidClonePathAbove(clonePath);
+            if (_clonePath == null) {
+                _clonePath = FindValidClonePathBelow(clonePath);
+                if (_clonePath == null)
+                    throw new pyRevitException(
+                        string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
+                    );
+            }
+
+            ClonePath = _clonePath.NormalizeAsPath();
+            Name = "Unnamed";
+        }
+
         // properties
         public string Name { get; private set; }
 
@@ -227,21 +243,21 @@ namespace pyRevitLabs.TargetApps.Revit {
             throw new pyRevitException("Clone path can not be null.");
         }
 
+        // get clone from manifest file
+        public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
+            return new PyRevitClone(manifest.Assembly);
+        }
+
         // return true of false for clone validity
         public static bool IsCloneValid(string clonePath) {
             try {
                 VerifyCloneValidity(clonePath);
                 return true;
             }
-            catch (Exception ex){
+            catch (Exception ex) {
                 logger.Debug("Invalid pyRevit clone. | {0}", ex.Message);
                 return false;
             }
-        }
-
-        // get clone from manifest file
-        public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
-            return new PyRevitClone(manifest.Assembly);
         }
 
         // get engine from clone path

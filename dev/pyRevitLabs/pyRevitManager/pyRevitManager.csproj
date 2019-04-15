@@ -55,7 +55,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>pyRevit CLI.ico</ApplicationIcon>
+    <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
@@ -119,7 +119,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="pyRevit.ico">
+    <Content Include="pyrevit.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="Resources\UsagePatterns.txt" />
@@ -172,11 +172,11 @@
       <Version>2.0.3</Version>
     </PackageReference>
     <PackageReference Include="NLog">
-      <Version>4.5.11</Version>
+      <Version>4.6.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="pyRevit CLI.ico">
+    <Content Include="pyrevit_cli.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -184,7 +184,7 @@
   <PropertyGroup>
     <PostBuildEvent>echo === Post-Build Actions ===
 echo Cleaning up build files
-copy "$(TargetDir)lib\win32\x64\git2-4aecb64.dll" "$(TargetDir)git2-4aecb64.dll"
+copy "$(TargetDir)lib\win32\x64\git2-572e4d8.dll" "$(TargetDir)git2-572e4d8.dll"
 rd /S /Q "$(TargetDir)lib"
 REM del /Q "$(TargetDir)*.pdb"
 REM del /Q "$(TargetDir)*.config"
