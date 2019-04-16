@@ -425,6 +425,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // 2020
             {"20190327_2315", ("20.0.0.377",    "2020 First Customer Ship")},
+            {"20190412_1200", ("20.0.1.2",      "2020.0.1")},
         };
 
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
