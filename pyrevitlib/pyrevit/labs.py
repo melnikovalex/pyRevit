@@ -1,5 +1,7 @@
+"""Wrapper module for pyRevitLabs functionality"""
 import logging
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
+#pylint: disable=superfluous-parens
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
 
