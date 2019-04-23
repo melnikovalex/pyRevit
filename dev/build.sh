@@ -6,6 +6,10 @@ DEVENV='/c/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/ID
 # install dependencies
 choco install upx -y &>/dev/null
 
+# clean bin
+rm -f ../bin/pyrevit*
+rm -f ../bin/*.dll
+
 # start a log file and listen
 cat /dev/null > ./buildlog.log
 tail -f ./buildlog.log &
@@ -22,18 +26,10 @@ rm -f ./buildlog.log
 
 # build pyrevit cli auto complete helper
 echo "building autocomplete helper binary"
-rm -f ../bin/pyrevit-complete.exe
+rm -f ../bin/pyrevit-autocomplete.exe
 go get github.com/posener/complete/gocomplete
-go build -o=../bin/pyrevit-complete.exe ./utils/pyrevit-complete.go
-upx ../bin/pyrevit-complete.exe
-
-# pyinstaller --icon=./pyRevitLabs/pyRevitManager/pyRevit\ CLI.ico \
-#             --distpath=../bin \
-#             --onefile \
-#             ./utils/pyrevit-fileinfo.py
-# rm -rf ./build
-# rm -rf ./dist
-# rm -rf ./utils/__pycache__
+go build -o=../bin/pyrevit-autocomplete.exe ./utils/pyrevit-autocomplete.go
+upx ../bin/pyrevit-autocomplete.exe
 
 # build pyrevit fileinfo getter
 echo "building fileinfo helper binary"
