@@ -35,8 +35,8 @@ namespace pyRevitManager {
 
         // consts:
         private const string updaterBinaryName = "pyrevit-updater";
-        private const string autocompleteBinaryName = "pyrevit-complete";
-        private const string shortcutIconName = "pyRevit.ico";
+        private const string autocompleteBinaryName = "pyrevit-autocomplete";
+        private const string shortcutIconName = "pyrevit.ico";
         private const string templatesDirName = "templates";
 
         // internal helpers:
