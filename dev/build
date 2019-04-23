@@ -1,0 +1,153 @@
+#!/bin/bash
+THISPATH=$(dirname "$0")
+LABS=$THISPATH/pyRevitLabs/pyRevitLabs.sln
+UTILSPATH=$THISPATH/utils
+BINPATH=$THISPATH/../bin
+DEVENV='devenv.exe'
+AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.exe
+FINFO=$UTILSPATH/pyrevit-fileinfo.exe
+
+function print-help {
+    cat << EOF
+Usage: build COMMAND [OPTIONS]
+
+| Dependencies:                                                                |
+|                                                                              |
+|     Install these tools before starting build process                        |
+|         cmder               https://cmder.net/                               |
+|         choco               https://chocolatey.org/install                   |
+|         Visual Studio (C#)  https://visualstudio.microsoft.com/vs/           |
+|                                                                              |
+|     Add the "Microsoft Visual Studio\2017\Community\Common7\IDE" path        |
+|     to system %PATH% env variable. Test devenv.exe works from shell.         |
+|                                                                              |
+|     After successfully installing dependencies, open cmder and run command   |
+|     below. This will install all necessary build-time dependencies.          |
+|         $ build install                                                      |
+
+COMMANDS:
+    help                print this help
+    docs                build documentation using sphinx.
+    labs                build pyrevit labs modules and cli tool using
+                         Visual Studio C# compiler
+    clean               clean build files
+
+OPTIONS:
+    -r                  clean and re-build
+
+Notes:
+    1. bash build script is used to allow building docs and other
+       non-win-dependent components on other operating systems as well.
+
+Report bugs to: https://github.com/eirannejad/pyRevit/issues
+
+EOF
+exit 1
+}
+
+function check-install {
+    echo "verifying build dependencies..."
+    if ! [ -x "$(command -v upx)" ]; then
+        echo -e '\e[31mError: upx is not installed.\e[39m\n' >&2
+        print-help
+        exit 2
+    elif ! [ -x "$(command -v go)" ]; then
+        echo -e '\e[31mError: go is not installed.\e[39m\n' >&2
+        print-help
+        exit 3
+    elif ! [ -x "$(command -v devenv)" ]; then
+        echo -e '\e[31mError: Visual Studio is not installed.\e[39m\n' >&2
+        print-help
+        exit 4
+    elif ! [ -x "$(command -v pipenv)" ]; then
+        echo -e '\e[31mError: pipenv is not installed.\e[39m\n' >&2
+        print-help
+        exit 5
+    fi
+}
+
+function clean-docs {
+    # function to clean all generated docs
+    echo "cleaning docs..."
+    rm -rf $THISPATH/../docs/_build
+}
+
+function clean-labs {
+    # function to clean labs build files
+    echo "cleaning labs..."
+    rm -f ../bin/pyrevit*
+    rm -f ../bin/*.dll
+    "$DEVENV" "$LABS" "//Clean" "Debug" "//out" "./buildlog.log"
+}
+
+# help
+if [ "" = "$1" ]; then
+    print-help
+
+elif [ "help" = "$1" ]; then
+    print-help
+
+# install all dependencies using choco
+elif [ "install" = "$1" ]; then
+    echo "installing build-time dependencies..."
+    echo "installing upx..."
+    choco install upx -y &>/dev/null
+    echo "installing go..."
+    choco install golang -y &>/dev/null
+    echo "installing python 2.7..."
+    choco install python2 -y &>/dev/null
+    echo "installing pipenv..."
+    pip2 install pipenv
+    pipenv install
+
+    exit 0
+
+elif [ "clean" = "$1" ]; then
+    clean-docs
+    clean-labs
+
+    exit 0
+fi
+
+# process commands
+# check install
+check-install
+if [ "docs" = "$1" ]; then
+    if [ "-r" = "$2" ]; then
+        clean-docs
+    fi
+
+    # build docs
+    echo "building docs..."
+    pipenv run sphinx-build -b html $THISPATH/../docs $THISPATH/../docs/_build
+
+elif [ "labs" = "$1" ]; then
+    if [ "-r" = "$2" ]; then
+        clean-labs
+    fi
+
+    # start a log file and listen
+    cat /dev/null > ./buildlog.log
+    tail -f ./buildlog.log &
+
+    echo "building labs..."
+    "$DEVENV" "$LABS" "//build" "Debug" "//out" "./buildlog.log"
+
+    # clean log file
+    kill $!
+    rm -f ./buildlog.log
+
+    # build pyrevit cli auto complete helper
+    echo "building autocomplete helper binary"
+    rm -f $BINPATH/pyrevit-autocomplete.exe
+    go get github.com/posener/complete/gocomplete
+    go build -o=$BINPATH/pyrevit-autocomplete.exe $UTILSPATH/pyrevit-autocomplete.go
+    upx $BINPATH/pyrevit-autocomplete.exe
+
+    # build pyrevit fileinfo getter
+    echo "building fileinfo helper binary"
+    rm -f $BINPATH/pyrevit-fileinfo.exe
+    go build -o=$BINPATH/pyrevit-fileinfo.exe $UTILSPATH/pyrevit-fileinfo.go
+    upx $BINPATH/pyrevit-fileinfo.exe
+fi
+echo "build completed..."
