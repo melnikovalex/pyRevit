@@ -122,6 +122,7 @@
     <Content Include="pyrevit.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="pyrevit_pkg.ico" />
     <None Include="Resources\UsagePatterns.txt" />
   </ItemGroup>
   <ItemGroup>
