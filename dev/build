@@ -45,24 +45,29 @@ EOF
 exit 1
 }
 
-function check-install {
-    echo "verifying build dependencies..."
+function check-docs-buildenv {
+    echo "verifying build dependencies for docs..."
+    if ! [ -x "$(command -v pipenv)" ]; then
+        echo -e '\033[31mError: pipenv is not installed.\033[39m\n' >& 2
+        print-help
+        exit 5
+    fi
+}
+
+function check-labs-buildenv {
+    echo "verifying build dependencies for labs..."
     if ! [ -x "$(command -v upx)" ]; then
-        echo -e '\e[31mError: upx is not installed.\e[39m\n' >&2
+        echo -e '\033[31mError: upx is not installed.\033[39m\n' >& 2
         print-help
         exit 2
     elif ! [ -x "$(command -v go)" ]; then
-        echo -e '\e[31mError: go is not installed.\e[39m\n' >&2
+        echo -e '\033[31mError: go is not installed.\033[39m\n' >& 2
         print-help
         exit 3
     elif ! [ -x "$(command -v devenv)" ]; then
-        echo -e '\e[31mError: Visual Studio is not installed.\e[39m\n' >&2
+        echo -e '\033[31mError: Visual Studio is not installed.\033[39m\n' >& 2
         print-help
         exit 4
-    elif ! [ -x "$(command -v pipenv)" ]; then
-        echo -e '\e[31mError: pipenv is not installed.\e[39m\n' >&2
-        print-help
-        exit 5
     fi
 }
 
@@ -110,9 +115,9 @@ elif [ "clean" = "$1" ]; then
 fi
 
 # process commands
-# check install
-check-install
 if [ "docs" = "$1" ]; then
+    check-docs-buildenv
+
     if [ "-r" = "$2" ]; then
         clean-docs
     fi
@@ -122,6 +127,8 @@ if [ "docs" = "$1" ]; then
     pipenv run sphinx-build -b html $THISPATH/../docs $THISPATH/../docs/_build
 
 elif [ "labs" = "$1" ]; then
+    check-install
+
     if [ "-r" = "$2" ]; then
         clean-labs
     fi
