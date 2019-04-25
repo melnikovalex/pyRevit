@@ -1,15 +1,28 @@
 #!/bin/bash
+
+OPTIND=1    # Reset in case getopts has been used previously in the shell.
 THISPATH=$(dirname "$0")
+
+# initialize build options
+OPENDOCS=false
+BUILDDOCS=false
+BUILDLABS=false
+REBUILD=false
+
+# ==============================================================================
+# Configs
+# ------------------------------------------------------------------------------
 LABS=$THISPATH/pyRevitLabs/pyRevitLabs.sln
 UTILSPATH=$THISPATH/utils
 BINPATH=$THISPATH/../bin
 DEVENV='devenv.exe'
 AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.exe
 FINFO=$UTILSPATH/pyrevit-fileinfo.exe
+# ==============================================================================
 
-function print-help {
+function print_help {
     cat << EOF
-Usage: build COMMAND [OPTIONS]
+Usage: build OPTIONS
 
 | Dependencies:                                                                |
 |                                                                              |
@@ -23,17 +36,15 @@ Usage: build COMMAND [OPTIONS]
 |                                                                              |
 |     After successfully installing dependencies, open cmder and run command   |
 |     below. This will install all necessary build-time dependencies.          |
-|         $ build install                                                      |
-
-COMMANDS:
-    help                print this help
-    docs                build documentation using sphinx.
-    labs                build pyrevit labs modules and cli tool using
-                         Visual Studio C# compiler
-    clean               clean build files
+|         $ build -i                                                           |
 
 OPTIONS:
-    -r                  clean and re-build
+    -h                  print this help
+    -d                  build documentation using sphinx.
+    -l                  build pyrevit labs modules and cli tool using
+                        Visual Studio C# compiler
+    -c                   clean build files
+    -r                  re-build
     -p                  open docs page after build
 
 Notes:
@@ -46,39 +57,39 @@ EOF
 exit 1
 }
 
-function check-docs-buildenv {
+function check_docs_buildenv {
     echo "verifying build dependencies for docs..."
     if ! [ -x "$(command -v pipenv)" ]; then
         echo -e '\033[31mError: pipenv is not installed.\033[39m\n' >& 2
-        print-help
+        print_help
         exit 5
     fi
 }
 
-function check-labs-buildenv {
+function check_labs_buildenv {
     echo "verifying build dependencies for labs..."
     if ! [ -x "$(command -v upx)" ]; then
         echo -e '\033[31mError: upx is not installed.\033[39m\n' >& 2
-        print-help
+        print_help
         exit 2
     elif ! [ -x "$(command -v go)" ]; then
         echo -e '\033[31mError: go is not installed.\033[39m\n' >& 2
-        print-help
+        print_help
         exit 3
     elif ! [ -x "$(command -v devenv)" ]; then
         echo -e '\033[31mError: Visual Studio is not installed.\033[39m\n' >& 2
-        print-help
+        print_help
         exit 4
     fi
 }
 
-function clean-docs {
+function clean_docs {
     # function to clean all generated docs
     echo "cleaning docs..."
     rm -rf $THISPATH/../docs/_build
 }
 
-function clean-labs {
+function clean_labs {
     # function to clean labs build files
     echo "cleaning labs..."
     rm -f ../bin/pyrevit*
@@ -86,15 +97,12 @@ function clean-labs {
     "$DEVENV" "$LABS" "//Clean" "Debug" "//out" "./buildlog.log"
 }
 
-# help
-if [ "" = "$1" ]; then
-    print-help
+function clean_opt {
+    clean_docs
+    clean_labs
+}
 
-elif [ "help" = "$1" ]; then
-    print-help
-
-# install all dependencies using choco
-elif [ "install" = "$1" ]; then
+function install_opt {
     echo "installing build-time dependencies..."
     echo "installing upx..."
     choco install upx -y &>/dev/null
@@ -105,22 +113,45 @@ elif [ "install" = "$1" ]; then
     echo "installing pipenv..."
     pip2 install pipenv
     pipenv install
+}
 
-    exit 0
+function process_args {
+    while getopts "hidlrpc" opt; do
+        case "$opt" in
+        h|\?) print_help
+            ;;
+        i)  install_opt
+            ;;
+        d)  BUILDDOCS=true
+            ;;
+        p)  OPENDOCS=true
+            ;;
+        l)  BUILDLABS=true
+            ;;
+        r)  REBUILD=true
+            ;;
+        c)  clean_opt
+            ;;
+        esac
+    done
+    if [ $OPTIND -eq 1 ]; then print_help; fi
+    shift $((OPTIND-1))
+}
 
-elif [ "clean" = "$1" ]; then
-    clean-docs
-    clean-labs
+# ==============================================================================
+# main()
+# ==============================================================================
+# process command line arguments and set global vars
+process_args $*
 
-    exit 0
-fi
+# build docs?
+if $BUILDDOCS; then
+    # verify env
+    check_docs_buildenv
 
-# process commands
-if [ "docs" = "$1" ]; then
-    check-docs-buildenv
-
-    if [ "-r" = "$2" ]; then
-        clean-docs
+    # re-build?
+    if $REBUILD; then
+        clean_docs
     fi
 
     # build docs
@@ -131,7 +162,9 @@ if [ "docs" = "$1" ]; then
     echo "build path: "$DOCSPATH
     pipenv run sphinx-build -b html $DOCSPATH $DOCSBUILDPATH
 
-    if [ "-p" = "$2" ]; then
+    # open docs after build?
+    if $OPENDOCS; then
+        echo "opening docs..."
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # Mac OSX
             open $DOCSINDEXPATH
@@ -147,17 +180,21 @@ if [ "docs" = "$1" ]; then
         fi
     fi
 
-elif [ "labs" = "$1" ]; then
-    check-install
+# build labs?
+elif $BUILDLABS; then
+    # verify env
+    check_labs_buildenv
 
-    if [ "-r" = "$2" ]; then
-        clean-labs
+    # re-build?
+    if $REBUILD; then
+        clean_labs
     fi
 
     # start a log file and listen
     cat /dev/null > ./buildlog.log
     tail -f ./buildlog.log &
 
+    # build labs
     echo "building labs..."
     "$DEVENV" "$LABS" "//build" "Debug" "//out" "./buildlog.log"
 
@@ -165,6 +202,7 @@ elif [ "labs" = "$1" ]; then
     kill $!
     rm -f ./buildlog.log
 
+    # build and pack utilities
     # build pyrevit cli auto complete helper
     echo "building autocomplete helper binary"
     rm -f $BINPATH/pyrevit-autocomplete.exe
@@ -178,4 +216,6 @@ elif [ "labs" = "$1" ]; then
     go build -o=$BINPATH/pyrevit-fileinfo.exe $UTILSPATH/pyrevit-fileinfo.go
     upx $BINPATH/pyrevit-fileinfo.exe
 fi
+
+# done
 echo "build completed..."
