@@ -34,6 +34,7 @@ COMMANDS:
 
 OPTIONS:
     -r                  clean and re-build
+    -p                  open docs page after build
 
 Notes:
     1. bash build script is used to allow building docs and other
@@ -123,8 +124,28 @@ if [ "docs" = "$1" ]; then
     fi
 
     # build docs
+    DOCSPATH=$THISPATH/../docs
+    DOCSBUILDPATH=$THISPATH/../docs/_build
+    DOCSINDEXPATH=$DOCSBUILDPATH/index.html
     echo "building docs..."
-    pipenv run sphinx-build -b html $THISPATH/../docs $THISPATH/../docs/_build
+    echo "build path: "$DOCSPATH
+    pipenv run sphinx-build -b html $DOCSPATH $DOCSBUILDPATH
+
+    if [ "-p" = "$2" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # Mac OSX
+            open $DOCSINDEXPATH
+        elif [[ "$OSTYPE" == "cygwin" ]]; then
+            # POSIX compatibility layer and Linux environment emulation for Windows
+            start $DOCSINDEXPATH
+        elif [[ "$OSTYPE" == "msys" ]]; then
+            # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+            start $DOCSINDEXPATH
+        elif [[ "$OSTYPE" == "win32" ]]; then
+            # I'm not sure this can happen.
+            start $DOCSINDEXPATH
+        fi
+    fi
 
 elif [ "labs" = "$1" ]; then
     check-install
