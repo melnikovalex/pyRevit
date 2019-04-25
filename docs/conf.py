@@ -174,7 +174,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRevit'
-copyright = u'2018, eirannejad'
+copyright = u'2014-2019, eirannejad'
 author = u'eirannejad'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -250,7 +250,7 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_logo = '_static/images/pyRevitLogo.svg'
+html_logo = '_static/pyRevitLogo.svg'
 
 # -- Options for HTMLHelp output ------------------------------------------
 

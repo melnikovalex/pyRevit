@@ -48,7 +48,7 @@ deeper into pyRevit inner workings.
     articles/core/loaderaddon.rst
     articles/core/loadseq.rst
 
-**Modules**
+**pyRevit Module**
 
 * :doc:`pyrevit/init`
 * :doc:`pyrevit/api`
@@ -64,7 +64,7 @@ deeper into pyRevit inner workings.
 ..  toctree::
     :maxdepth: 2
     :hidden:
-    :caption: Modules
+    :caption: pyRevit Module
 
     pyrevit/init.rst
     pyrevit/api.rst
