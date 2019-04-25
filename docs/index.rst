@@ -10,6 +10,7 @@ I suggest reading this section completely as it provides 99% of what you will
 need to know for developing scripts in pyRevit environment. Other sections dive
 deeper into pyRevit inner workings.
 
+* :doc:`articles/aboutdocs`
 * :doc:`articles/firstcommand`
 * :doc:`articles/scriptanatomy`
 * :doc:`articles/outputfeatures`
@@ -24,6 +25,7 @@ deeper into pyRevit inner workings.
     :hidden:
     :caption: Getting Started
 
+    articles/aboutdocs.rst
     articles/firstcommand.rst
     articles/scriptanatomy.rst
     articles/outputfeatures.rst
@@ -46,7 +48,7 @@ deeper into pyRevit inner workings.
     articles/core/loaderaddon.rst
     articles/core/loadseq.rst
 
-**Modules**
+**pyRevit Module**
 
 * :doc:`pyrevit/init`
 * :doc:`pyrevit/api`
@@ -62,7 +64,7 @@ deeper into pyRevit inner workings.
 ..  toctree::
     :maxdepth: 2
     :hidden:
-    :caption: Modules
+    :caption: pyRevit Module
 
     pyrevit/init.rst
     pyrevit/api.rst
