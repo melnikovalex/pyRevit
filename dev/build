@@ -7,6 +7,7 @@ THISPATH=$(dirname "$0")
 OPENDOCS=false
 BUILDDOCS=false
 BUILDLABS=false
+BUILDDEBUG=false
 REBUILD=false
 
 # ==============================================================================
@@ -42,8 +43,9 @@ OPTIONS:
     -h                  print this help
     -d                  build documentation using sphinx.
     -l                  build pyrevit labs modules and cli tool using
-                        Visual Studio C# compiler
-    -c                   clean build files
+                         Visual Studio C# compiler
+    -g                  build for debug
+    -c                  clean build files
     -r                  re-build
     -p                  open docs page after build
 
@@ -128,6 +130,8 @@ function process_args {
             ;;
         l)  BUILDLABS=true
             ;;
+        g)  BUILDDEBUG=true
+            ;;
         r)  REBUILD=true
             ;;
         c)  clean_opt
@@ -186,17 +190,25 @@ elif $BUILDLABS; then
     check_labs_buildenv
 
     # re-build?
+    BUILDTYPE="//Build"
     if $REBUILD; then
-        clean_labs
+        BUILDTYPE="//Rebuild"
+    fi
+
+    # build for debug or release?
+    BUILDCONFIG="Release"
+    if $BUILDDEBUG; then
+        BUILDCONFIG="Debug"
     fi
 
     # start a log file and listen
     cat /dev/null > ./buildlog.log
     tail -f ./buildlog.log &
-
+        
     # build labs
-    echo "building labs..."
-    "$DEVENV" "$LABS" "//build" "Debug" "//out" "./buildlog.log"
+    echo "building labs for "$BUILDCONFIG
+    "$DEVENV" "$LABS" "$BUILDTYPE" "$BUILDCONFIG" "//out" "./buildlog.log"
+
 
     # clean log file
     kill $!
@@ -208,13 +220,17 @@ elif $BUILDLABS; then
     rm -f $BINPATH/pyrevit-autocomplete.exe
     go get github.com/posener/complete/gocomplete
     go build -o=$BINPATH/pyrevit-autocomplete.exe $UTILSPATH/pyrevit-autocomplete.go
-    upx $BINPATH/pyrevit-autocomplete.exe
+    upx --mono $BINPATH/pyrevit-autocomplete.exe
 
     # build pyrevit fileinfo getter
     echo "building fileinfo helper binary"
     rm -f $BINPATH/pyrevit-fileinfo.exe
     go build -o=$BINPATH/pyrevit-fileinfo.exe $UTILSPATH/pyrevit-fileinfo.go
-    upx $BINPATH/pyrevit-fileinfo.exe
+    upx --mono $BINPATH/pyrevit-fileinfo.exe
+
+    # pack utilities
+    echo "packing other cli utilities"
+    upx --mono $BINPATH/toast64.exe
 fi
 
 # done
