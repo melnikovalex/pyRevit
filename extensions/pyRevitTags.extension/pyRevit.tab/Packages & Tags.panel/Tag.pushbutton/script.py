@@ -12,7 +12,7 @@ import tagsmgr
 
 __title__ = 'Tag\nSelected'
 __author__ = '{{author}}'
-__helpurl__ = '{{docpath}}'
+__helpurl__ = '{{docpath}}FYNDSAypWlg'
 
 
 logger = script.get_logger()
@@ -76,6 +76,9 @@ class ApplyTagWindow(forms.WPFWindow):
     def append_tags(self, sender, args):
         self._apply_tags()
 
+
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
 
 if tagscfg.verify_tags_configs():
     ApplyTagWindow('ApplyTagWindow.xaml').ShowDialog()

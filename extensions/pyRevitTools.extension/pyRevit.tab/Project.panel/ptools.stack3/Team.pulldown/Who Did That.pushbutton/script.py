@@ -6,8 +6,7 @@ from pyrevit import script
 
 
 __title__ = 'Who did that??'
-__author__ = 'Ehsan Iran-Nejad\n'\
-             'Frederic Beaupere'
+__authors__ = ['{{author}}', 'Frederic Beaupere']
 
 
 def who_reloaded_keynotes():
@@ -50,16 +49,13 @@ def who_created_selection():
     selection = revit.get_selection()
     if revit.doc.IsWorkshared:
         if selection and len(selection) == 1:
-            wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(
-                revit.doc,
-                selection.first.Id
-                )
+            eh = revit.query.get_history(selection.first)
 
             forms.alert('Creator: {0}\n'
                         'Current Owner: {1}\n'
-                        'Last Changed By: {2}'.format(wti.Creator,
-                                                      wti.Owner,
-                                                      wti.LastChangedBy))
+                        'Last Changed By: {2}'.format(eh.creator,
+                                                      eh.owner,
+                                                      eh.last_changed_by))
         else:
             forms.alert('Exactly one element must be selected.')
     else:
@@ -67,7 +63,7 @@ def who_created_selection():
 
 
 def who_created_activeview():
-    active_view = revit.activeview
+    active_view = revit.active_view
     view_id = active_view.Id.ToString()
     view_name = active_view.Name
     view_creator = \

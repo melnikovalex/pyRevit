@@ -43,7 +43,8 @@ switches = ['Graphic Styles',
             'Fill Grids',
             'Connected Circuits',
             'Point Cloud Instances',
-            'External Services'
+            'External Services',
+            'Builtin Categories with No DB.Category',
             ]
 
 selected_switch = \
@@ -82,12 +83,11 @@ elif selected_switch == 'Line Patterns':
         print(i.Name)
 
 elif selected_switch == 'Line Styles':
-    c = revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
-    subcats = c.SubCategories
-
-    for lineStyle in subcats:
-        print("STYLE NAME: {0} ID: {1}".format(lineStyle.Name.ljust(40),
-                                               lineStyle.Id.ToString()))
+    for lineStyle in revit.query.get_line_styles(doc=revit.doc):
+        print("STYLE NAME: {} ID: {} ({})".format(
+            lineStyle.Name.ljust(40),
+            lineStyle.Id.ToString(),
+            lineStyle))
 
 elif selected_switch == 'Model / Detail / Sketch Lines':
     cat_list = List[DB.BuiltInCategory]([DB.BuiltInCategory.OST_Lines,
@@ -205,7 +205,6 @@ elif selected_switch == 'Element Types':
         for et in etypes:
             print('\t{} {}'.format(output.linkify(et.Id),
                                    revit.query.get_name(et)))
-
 
 elif selected_switch == 'Family Symbols':
     cl = DB.FilteredElementCollector(revit.doc)
@@ -438,25 +437,27 @@ elif selected_switch == 'Selected Line Coordinates':
             print('Elemend with ID: {0} is a not a line.\n'.format(el.Id))
 
 elif selected_switch == 'Data Schema Entities':
-    allElements = \
-        list(DB.FilteredElementCollector(revit.doc)
-             .WherePasses(
-                 DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
-                                    DB.ElementIsElementTypeFilter(True))))
+    schemas = {x.GUID.ToString(): x
+               for x in revit.query.get_all_schemas()}
 
-    guids = {sc.GUID.ToString(): sc.SchemaName
-             for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
-
-    for el in allElements:
-        schemaGUIDs = el.GetEntitySchemaGuids()
-        for guid in schemaGUIDs:
-            if guid.ToString() in guids.keys():
-                print('ELEMENT ID: {0}\t\t'
-                      'SCHEMA NAME: {1}'
-                      .format(el.Id.IntegerValue,
-                              guids[guid.ToString()]))
-
-    print('Iteration completed over {0} elements.'.format(len(allElements)))
+    for el in revit.query.get_all_elements(doc=revit.doc):
+        schema_guids = el.GetEntitySchemaGuids()
+        for guid_obj in schema_guids:
+            guid = guid_obj.ToString()
+            if guid in schemas:
+                schema = schemas[guid]
+                print(
+                    '{}{}'.format(
+                        '{} ({})'.format(
+                            output.linkify(el.Id),
+                            el.Category.Name if el.Category else "Unknown"
+                            ).ljust(40),
+                        schema.SchemaName
+                        )
+                    )
+                for fname, fval in \
+                    revit.query.get_schema_field_values(el, schema).items():
+                    print('\t%s: %s' %(fname, fval))
 
 elif selected_switch == 'Fill Grids':
     selection = revit.get_selection()
@@ -522,3 +523,9 @@ elif selected_switch == 'External Services':
                 server.GetName(),
                 server.GetDescription(),
                 sid in bisrvids))
+
+elif selected_switch == 'Builtin Categories with No DB.Category':
+    for bic in coreutils.get_enum_values(DB.BuiltInCategory):
+        dbcat = revit.query.get_category(bic)
+        if not dbcat:
+            print(bic)

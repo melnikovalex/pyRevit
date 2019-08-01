@@ -13,6 +13,7 @@ import os.path as op
 import warnings
 
 from pyrevit import EXEC_PARAMS, PyRevitException
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import envvars
@@ -51,10 +52,10 @@ def get_script_path():
 
 
 def get_alt_script_path():
-    """Return alternate script path of the current pyRevit command.
+    """Return config script path of the current pyRevit command.
 
     Returns:
-        str: alternate script path
+        str: config script path
     """
     return EXEC_PARAMS.command_alt_path
 
@@ -90,10 +91,10 @@ def get_results():
     """Return command results dictionary for logging.
 
     Returns:
-        :obj:`pyrevit.usagelog.record.CommandCustomResults`:
+        :obj:`pyrevit.telemetry.record.CommandCustomResults`:
             Command results dict
     """
-    from pyrevit.usagelog.record import CommandCustomResults
+    from pyrevit.telemetry.record import CommandCustomResults
     return CommandCustomResults()
 
 
@@ -101,7 +102,7 @@ def get_pyrevit_version():
     """Return pyRevit version.
 
     Returns:
-        :obj:`pyrevit.versionmgr.PyRevitVersion`: pyRevit version provider
+        :obj:`pyrevit.versionmgr._PyRevitVersion`: pyRevit version provider
     """
     return versionmgr.get_pyrevit_version()
 
@@ -449,9 +450,13 @@ def exit():     #pylint: disable=W0622
 
 def show_file_in_explorer(file_path):
     """Show file in Windows Explorer."""
-    import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'
-                     .format(os.path.normpath(file_path)))
+    coreutils.show_entry_in_explorer(file_path)
+
+
+def show_folder_in_explorer(folder_path):
+    """Show folder in Windows Explorer."""
+    coreutils.open_folder_in_explorer(folder_path)
+
 
 
 def open_url(url):

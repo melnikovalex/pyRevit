@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.DeffrelDB {
     // datastore
@@ -94,7 +94,7 @@ namespace pyRevitLabs.DeffrelDB {
             IOTimeOut = ioTimeOut;
 
             // confirm file exists
-            CommonUtils.ConfirmFile(FilePath);
+            CommonUtils.EnsureFile(FilePath);
 
             // open the datastore with requested access type
             Open();

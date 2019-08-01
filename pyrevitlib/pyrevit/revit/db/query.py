@@ -36,14 +36,37 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering
-    ]
+]
 
+
+DETAIL_CURVES = (
+    DB.DetailLine,
+    DB.DetailArc,
+    DB.DetailEllipse,
+    DB.DetailNurbSpline
+)
+
+MODEL_CURVES = (
+    DB.ModelLine,
+    DB.ModelArc,
+    DB.ModelEllipse,
+    DB.ModelNurbSpline
+)
+
+BUILTINCATEGORIES_VIEW = [
+    DB.BuiltInCategory.OST_Views,
+    DB.BuiltInCategory.OST_ReferenceViewer,
+    DB.BuiltInCategory.OST_Viewers
+]
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
 SheetRefInfo = namedtuple('SheetRefInfo',
                           ['sheet_num', 'sheet_name', 'detail_num',
                            'ref_viewid'])
+
+ElementHistory = namedtuple('ElementHistory',
+                            ['creator', 'owner', 'last_changed_by'])
 
 
 def get_name(element, title_on_sheet=False):
@@ -67,6 +90,19 @@ def get_name(element, title_on_sheet=False):
     # have to use the imported Element otherwise
     # AttributeError occurs
     return Element.Name.__get__(element)
+
+
+def get_type(element):
+    """Get element type.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.ElementType: type object of given element
+    """
+    type_id = element.GetTypeId()
+    return element.Document.GetElement(type_id)
 
 
 def get_symbol_name(element):
@@ -119,8 +155,12 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
 
 
 def get_all_elements(doc=None):
+            #  .WhereElementIsNotElementType()\
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
-             .WhereElementIsNotElementType()\
+             .WherePasses(
+                 DB.LogicalOrFilter(
+                     DB.ElementIsElementTypeFilter(False),
+                     DB.ElementIsElementTypeFilter(True)))\
              .ToElements()
 
 
@@ -356,17 +396,18 @@ def get_project_parameters(doc=None):
     # collect shared parameter names
     shared_params = {x.Name: x for x in get_defined_sharedparams()}
 
-    param_bindings = doc.ParameterBindings
-    pb_iterator = param_bindings.ForwardIterator()
-    pb_iterator.Reset()
-
     pp_list = []
-    while pb_iterator.MoveNext():
-        msp = db.ProjectParameter(
-            pb_iterator.Key,
-            param_bindings[pb_iterator.Key],
-            param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
-        pp_list.append(msp)
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+
+        while pb_iterator.MoveNext():
+            msp = db.ProjectParameter(
+                pb_iterator.Key,
+                param_bindings[pb_iterator.Key],
+                param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
+            pp_list.append(msp)
 
     return pp_list
 
@@ -508,7 +549,9 @@ def get_all_views(doc=None, view_types=None, include_nongraphical=False):
 
 
 def get_all_view_templates(doc=None, view_types=None):
-    return [x for x in get_all_views(doc=doc, view_types=view_types)
+    return [x for x in get_all_views(doc=doc,
+                                     view_types=view_types,
+                                     include_nongraphical=True)
             if x.IsTemplate]
 
 
@@ -538,13 +581,33 @@ def get_view_by_sheetref(sheet_num, detail_num, doc=None):
         return vport.ViewId
 
 
+def is_schedule(view):
+    """Check if given DB.View is a Revit Schedule.
+
+    Returns False if given view is a DB.ViewSchedule but is a
+        Schedule View Template, or
+        Titleblock Revision Schedule, or
+        Internal Keynote Schedule, or
+        Keynote Legend Schedule
+    """
+    if isinstance(view, DB.ViewSchedule) and not view.IsTemplate:
+        isrevsched = view.IsTitleblockRevisionSchedule
+        isintkeynote = view.IsInternalKeynoteSchedule
+        iskeynotelegend = view.Definition.CategoryId == \
+            get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
+
+        return not (isrevsched or isintkeynote or iskeynotelegend)
+
+    return False
+
+
 def get_all_schedules(doc=None):
     doc = doc or HOST_APP.doc
     all_scheds = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSchedule) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
-    return all_scheds
+    return filter(is_schedule, all_scheds)
 
 
 def get_view_by_name(view_name, doc=None):
@@ -562,7 +625,7 @@ def get_all_referencing_elements(doc=None):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements.append(el.Id)
     return all_referencing_elements
 
@@ -574,7 +637,7 @@ def get_all_referencing_elements_in_view(view):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements_in_view.append(el.Id)
     return all_referencing_elements_in_view
 
@@ -944,6 +1007,14 @@ def get_used_keynotes(doc=None):
              .ToElements()
 
 
+def get_visible_keynotes(view=None):
+    doc = view.Document
+    return DB.FilteredElementCollector(doc, view.Id)\
+             .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+
+
 def get_available_keynotes(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
@@ -1083,3 +1154,84 @@ def yield_unreferenced_views(doc=None, all_views=None):
         # if it has NO referring views, yield
         if len(list(yield_referring_views(view))) == 0:
             yield view.Id
+
+
+def get_line_categories(doc=None):
+    doc = doc or HOST_APP.doc
+    lines_cat = doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+    return lines_cat.SubCategories
+
+
+def get_line_styles(doc=None):
+    return [x.GetGraphicsStyle(DB.GraphicsStyleType.Projection)
+            for x in get_line_categories(doc=doc)]
+
+
+def get_history(target_element):
+    doc = target_element.Document
+    if doc.IsWorkshared:
+        wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(doc,
+                                                            target_element.Id)
+        return ElementHistory(creator=wti.Creator,
+                              owner=wti.Owner,
+                              last_changed_by=wti.LastChangedBy)
+
+
+def is_detail_curve(element):
+    return isinstance(element, DETAIL_CURVES)
+
+
+def is_model_curve(element):
+    return isinstance(element, MODEL_CURVES)
+
+
+def is_sketch_curve(element):
+    if element.Category:
+        cid = element.Category.Id
+        return cid == DB.ElementId(DB.BuiltInCategory.OST_SketchLines)
+
+
+def get_all_schemas():
+    return DB.ExtensibleStorage.Schema.ListSchemas()
+
+
+def get_schema_field_values(element, schema):
+    field_values = {}
+    entity = element.GetEntity(schema)
+    if entity:
+        for field in schema.ListFields():
+            field_type = field.ValueType
+            if field.ContainerType == DB.ExtensibleStorage.ContainerType.Array:
+                field_type = framework.IList[field.ValueType]
+            elif field.ContainerType == DB.ExtensibleStorage.ContainerType.Map:
+                field_type = \
+                    framework.IDictionary[field.KeyType, field.ValueType]
+            try:
+                value = entity.Get[field_type](
+                    field.FieldName,
+                    DB.DisplayUnitType.DUT_UNDEFINED
+                    )
+            except:
+                value = None
+
+            field_values[field.FieldName] = value
+    return field_values
+
+
+def get_family_type(type_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for ftype in family_doc.FamilyManager.Types:
+            if ftype.Name == type_name:
+                return ftype
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameter(param_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for fparam in family_doc.FamilyManager.GetParameters():
+            if fparam.Definition.Name == param_name:
+                return fparam
+    else:
+        raise PyRevitException('Document is not a family')
+

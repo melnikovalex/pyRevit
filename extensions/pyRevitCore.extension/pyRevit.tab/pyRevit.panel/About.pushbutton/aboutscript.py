@@ -4,11 +4,11 @@ import sys
 
 from pyrevit import HOST_APP
 from pyrevit import versionmgr
-from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.userconfig import user_config
 
 
 __context__ = 'zerodoc'
@@ -17,7 +17,8 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
           'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
-Revit = TargetApps.Revit
+
+logger = script.get_logger()
 
 
 class AboutWindow(forms.WPFWindow):
@@ -38,28 +39,34 @@ class AboutWindow(forms.WPFWindow):
             self.branch_name = pyrvt_repo.branch
             self.show_element(self.git_commit)
             self.show_element(self.git_branch)
-        except Exception:
+        except Exception as getbranch_ex:
+            logger.debug('Error getting branch: %s', getbranch_ex)
             # other wise try to get deployment name
-            attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
+            attachment = user_config.get_current_attachment()
             if attachment:
                 try:
-                    self.deployname = attachment.Clone.GetDeployment().Name
+                    self.deployname = attachment.Clone.Deployment.Name
                     self.show_element(self.repo_deploy)
-                except Exception:
-                    pass
+                except Exception as getdepl_ex:
+                    logger.debug('Error getting depoyment: %s', getdepl_ex)
 
         # get cli version
         pyrvt_cli_version = 'v' + versionmgr.get_pyrevit_cli_version()
         self.show_element(self.cli_info)
         self.cliversion.Text = pyrvt_cli_version
 
+        # get cpython engine version
+        self.cpyengine = user_config.get_active_cpython_engine()
+
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
         self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
-        self.pyrevit_engine.Text = 'Running on IronPython {}'\
-                                   .format(sys.version.split('(')[0].strip())
+        self.pyrevit_engine.Text = \
+            'Running on IronPython {} (cpython {})'\
+                .format(sys.version.split('(')[0].strip(),
+                        '.'.join(list(str(self.cpyengine.Version))))
 
         rocketmodetext = \
             'Rocket-mode {}' \

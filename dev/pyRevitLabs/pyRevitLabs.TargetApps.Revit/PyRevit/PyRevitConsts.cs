@@ -8,13 +8,16 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public static class PyRevitConsts {
+        public const string ProductName = "pyRevit";
+
         // consts for the official pyRevit repo
         public const string OriginalRepoPath =
             @"https://github.com/eirannejad/pyRevit.git";
 
         public const string OriginalZipInternalBranchPath = @"{0}-{1}";
-        public const string OriginalZipPath =
-            @"https://github.com/eirannejad/pyRevit/archive/{0}.zip";
+        public const string ImageFileExtension = ".zip";
+        public const string OriginalImageUrl =
+            @"https://github.com/eirannejad/pyRevit/archive/{0}" + ImageFileExtension;
 
         public static string ExtensionsDefinitionFileUri =
             string.Format(
@@ -31,7 +34,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ReleasesUrl = @"https://github.com/eirannejad/pyRevit/releases";
 
         // cli
-        public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/README_CLI.md";
+        public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";
+        public const string CLIHelpUrlDev = @"https://github.com/eirannejad/pyRevit/blob/develop/docs/cli.md";
 
         // api
         public const string ReleasePrefix = "v";
@@ -71,8 +75,8 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public const string PyRevitfileFilename = "PyRevitfile";
 
-        // archive clones
-        public const string DeployFromArchiveConfigsFilename = ".pyrevitargs";
+        // image clones
+        public const string DeployFromImageConfigsFilename = ".pyrevitargs";
 
         // consts for creating pyRevit addon manifest file
         public const string AddinFileName = "pyRevit";
@@ -80,7 +84,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string AddinId = "B39107C3-A1D7-47F4-A5A1-532DDF6EDB5D";
         public const string AddinClassName = "PyRevitLoader.PyRevitLoaderApplication";
         public const string VendorId = "eirannejad";
-        public const string DllName = "pyRevitLoader.dll";
+        public const string LegacyEngineDllName = "pyRevitLoader.dll";
         public const int ConfigsDynamoCompatibleEnginerVer = 273;
 
         // consts for recording pyrevit.exe config in the pyRevit configuration file
@@ -97,8 +101,6 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsFileLoggingKey = "filelogging";
         public const string ConfigsStartupLogTimeoutKey = "startuplogtimeout";
         public const string ConfigsUserExtensionsKey = "userextensions";
-        public const string ConfigsCompileCSharpKey = "compilecsharp";
-        public const string ConfigsCompileVBKey = "compilevb";
         public const string ConfigsCPythonEngine = "cpyengine";
         public const string ConfigsLoadBetaKey = "loadbeta";
         public const string ConfigsRocketModeKey = "rocketmode";
@@ -106,10 +108,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsMinDriveSpaceKey = "minhostdrivefreespace";
         public const string ConfigsRequiredHostBuildKey = "requiredhostbuild";
         public const string ConfigsOutputStyleSheet = "outputstylesheet";
-        public const string ConfigsUsageLoggingSection = "usagelogging";
-        public const string ConfigsUsageLoggingStatusKey = "active";
-        public const string ConfigsUsageLogFilePathKey = "logfilepath";
-        public const string ConfigsUsageLogServerUrlKey = "logserverurl";
+        public const string ConfigsTelemetrySection = "telemetry";
+        public const string ConfigsTelemetryStatusKey = "active";
+        public const string ConfigsTelemetryFilePathKey = "telemetrypath";
+        public const string ConfigsTelemetryServerUrlKey = "telemetryserverurl";
         public const string ConfigsUserCanUpdateKey = "usercanupdate";
         public const string ConfigsUserCanExtendKey = "usercanextend";
         public const string ConfigsUserCanConfigKey = "usercanconfig";
@@ -142,8 +144,12 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string BundleNoButtonPostfix = ".nobutton";
 
         // methods
-        public static string GetZipPackageUrl(string branchName) {
-            return string.Format(OriginalZipPath, branchName);
+        public static string GetBranchArchiveUrl(string branchName) {
+            return string.Format(OriginalImageUrl, branchName);
+        }
+
+        public static string GetTagArchiveUrl(string tagName) {
+            return string.Format(OriginalImageUrl, tagName);
         }
 
         public static string GetZipPackageInternalBranchPath(string branchName) {

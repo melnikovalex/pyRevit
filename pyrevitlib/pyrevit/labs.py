@@ -1,5 +1,7 @@
+"""Wrapper module for pyRevitLabs functionality"""
 import logging
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
+#pylint: disable=superfluous-parens
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
 
@@ -8,10 +10,11 @@ from pyrevit.coreutils import logger
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
-clr.AddReference('Nlog')
 clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
-clr.AddReference('MahApps.Metro')
+clr.AddReference('YamlDotNet')
+clr.AddReference('pyRevitLabs.NLog')
+clr.AddReference('pyRevitLabs.MahAppsMetro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.CommonWPF')
@@ -19,10 +22,11 @@ clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 import Nett
-import NLog
+import pyRevitLabs.NLog as NLog
 import MadMilkman.Ini
 import OpenMcdf
-import MahApps.Metro
+import YamlDotNet as libyaml
+import pyRevitLabs.MahAppsMetro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import CommonWPF
@@ -76,7 +80,7 @@ if not EXEC_PARAMS.doc_mode:
     target = PyRevitOutputTarget()
     target.Name = __name__
     target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
-    config.AddTarget(target)
+    config.AddTarget(__name__, target)
     config.AddRuleForAllLevels(target)
     NLog.LogManager.Configuration = config
 

@@ -162,7 +162,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
             dir_list.extend([
-                op.expandvars(op.normpath(x.encode('string-escape')))
+                op.expandvars(op.normpath(x))
                 for x in self.core.userextensions
                 ])
         except Exception as read_err:
@@ -197,24 +197,29 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             cpy_engines_dict = \
                 {x.Version: x for x in attachment.Clone.GetEngines()
                  if 'cpython' in x.KernelName.lower()}
-            # find latest cpython engine
-            latest_cpyengine = \
-                max(cpy_engines_dict.values(), key=lambda x: x.Version)
+            mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
+            if cpy_engines_dict:
+                # find latest cpython engine
+                latest_cpyengine = \
+                    max(cpy_engines_dict.values(), key=lambda x: x.Version)
 
-            # grab cpython engine configured to be used by user
-            consts = TargetApps.Revit.PyRevitConsts
-            cpyengine_cfg = \
-                self.core.get_option(consts.ConfigsCPythonEngine, 0)
-            try:
-                cpyengine_ver = int(cpyengine_cfg)
-            except Exception:
-                cpyengine_ver = 000
+                # grab cpython engine configured to be used by user
+                consts = TargetApps.Revit.PyRevitConsts
+                cpyengine_cfg = \
+                    self.core.get_option(consts.ConfigsCPythonEngine, 0)
+                try:
+                    cpyengine_ver = int(cpyengine_cfg)
+                except Exception:
+                    cpyengine_ver = 000
 
-            # grab the engine by version or default to latest
-            cpyengine = \
-                cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
-            # return full dll assembly path
-            return cpyengine
+                # grab the engine by version or default to latest
+                cpyengine = \
+                    cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
+                # return full dll assembly path
+                return cpyengine
+            else:
+                mlogger.error('Can not determine cpython engines for '
+                              'current attachment: %s', attachment)
 
     def save_changes(self):
         """Save user config into associated config file."""
@@ -246,15 +251,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         """Return current pyRevit attachment."""
         hostver = int(HOST_APP.version)
         return TargetApps.Revit.PyRevit.GetAttached(hostver)
-
-    @staticmethod
-    def is_attachment_writable(attachment):
-        """Checks if addin-file of an attachment is writable"""
-        try:
-            open(attachment.Manifest.FilePath, "a").close()
-            return True
-        except:
-            return False
 
 
 def find_config_file(target_path):
@@ -311,12 +307,6 @@ def verify_configs(config_file_path=None):
     # userextensions
     if not parser.core.has_option(consts.ConfigsUserExtensionsKey):
         parser.core.set_option(consts.ConfigsUserExtensionsKey, [])
-    # compilecsharp
-    if not parser.core.has_option(consts.ConfigsCompileCSharpKey):
-        parser.core.set_option(consts.ConfigsCompileCSharpKey, True)
-    # compilevb
-    if not parser.core.has_option(consts.ConfigsCompileVBKey):
-        parser.core.set_option(consts.ConfigsCompileVBKey, True)
 
     # cpyengine: does not need to set a default for this
 
@@ -339,20 +329,20 @@ def verify_configs(config_file_path=None):
     if not parser.core.has_option(consts.ConfigsUserCanConfigKey):
         parser.core.set_option(consts.ConfigsUserCanConfigKey, True)
 
-    # usagelogging section
-    if not parser.has_section(consts.ConfigsUsageLoggingSection):
-        parser.add_section(consts.ConfigsUsageLoggingSection)
-    # usagelogging active
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLoggingStatusKey):
-        parser.usagelogging.set_option(
-            consts.ConfigsUsageLoggingStatusKey, False
+    # telemetry section
+    if not parser.has_section(consts.ConfigsTelemetrySection):
+        parser.add_section(consts.ConfigsTelemetrySection)
+    # telemetry active
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryStatusKey):
+        parser.telemetry.set_option(
+            consts.ConfigsTelemetryStatusKey, False
             )
-    # usagelogging file
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLogFilePathKey):
-        parser.usagelogging.set_option(consts.ConfigsUsageLogFilePathKey, "")
-    # usagelogging server
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLogServerUrlKey):
-        parser.usagelogging.set_option(consts.ConfigsUsageLogServerUrlKey, "")
+    # telemetry file
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryFilePathKey):
+        parser.telemetry.set_option(consts.ConfigsTelemetryFilePathKey, "")
+    # telemetry server
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryServerUrlKey):
+        parser.telemetry.set_option(consts.ConfigsTelemetryServerUrlKey, "")
 
     # save config into config file
     if config_file_path:

@@ -32,6 +32,7 @@ from System import Convert
 from System.Text import Encoding
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
+from System.Collections.Generic import IList, IDictionary
 from System import DateTime, DateTimeOffset
 
 from System import Diagnostics
@@ -76,12 +77,15 @@ import wpf
 try:
     # clr.AddReference('Microsoft.WindowsAPICodePack')
     clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
-    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs
+    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs #pylint: disable=ungrouped-imports
 except Exception:
     CPDialogs = None
 
 
 from pyrevit import BIN_DIR
+
+
+ASSEMBLY_FILE_TYPE = 'dll'
 
 
 def get_type(fw_object):

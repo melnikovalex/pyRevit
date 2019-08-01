@@ -112,6 +112,11 @@ Currently, pyRevit support three types of command availability types.
     # Tool activates when all selected elements are of the given category or categories
     __context__ = '<Element Category>'
     __context__ = ['<Element Category>', '<Element Category>']
+    
+    
+If category name starts with 'OST_' (e.g. 'OST_Doors') comparison will be made using BuiltInCategory. It allows to use your script in spite of Revit translation
+
+List of available categories https://www.revitapidocs.com/2020/ba1c5b30-242f-5fdc-8ea9-ec3b61e6e722.htm
 
 
 ``<Element Category>`` can be any of the standard Revit element categories.
@@ -128,6 +133,7 @@ Here are a few examples:
         __context__ = 'Doors'
         __context__ = 'Walls'
         __context__ = 'Floors'
+        __context__ = 'OST_Doors'
         __context__ = ['Space Tags', 'Spaces']
 
 
@@ -347,7 +353,7 @@ Variables listed below are provided for every script in pyRevit.
 
     # information about the pyrevit command being run
     __commandpath__             # main script path
-    __alternatecommandpath__    # alternate script path
+    __configcommandpath__       # config script path
     __commandname__             # command name
     __commandbundle__           # command bundle name
     __commandextension__        # command extension name

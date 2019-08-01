@@ -84,12 +84,6 @@
     <Reference Include="LibGit2Sharp">
       <HintPath>..\..\..\bin\LibGit2Sharp.dll</HintPath>
     </Reference>
-    <Reference Include="MahApps.Metro">
-      <HintPath>..\..\..\bin\MahApps.Metro.dll</HintPath>
-    </Reference>
-    <Reference Include="MathNet.Numerics">
-      <HintPath>..\..\..\bin\MathNet.Numerics.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Dynamic, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\bin\engines\278\Microsoft.Dynamic.dll</HintPath>
@@ -109,6 +103,9 @@
     </Reference>
     <Reference Include="pyRevitLabs.CommonWPF">
       <HintPath>..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
+    </Reference>
+    <Reference Include="pyRevitLabs.MahAppsMetro">
+      <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLoader">
       <HintPath>..\..\..\bin\engines\278\pyRevitLoader.dll</HintPath>
@@ -145,9 +142,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses_dyno.cs">
-      <Link>baseclasses_dyno.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\enginermgr.cs">
       <Link>enginermgr.cs</Link>
     </Compile>
@@ -162,9 +156,6 @@
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\replctrl.cs">
-      <Link>replctrl.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
@@ -181,11 +172,11 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\telemetry.cs">
+      <Link>telemetry.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\unmanaged.cs">
       <Link>unmanaged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\usagelogger.cs">
-      <Link>usagelogger.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
       <Link>_config.cs</Link>

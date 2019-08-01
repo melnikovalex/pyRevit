@@ -1,4 +1,8 @@
-"""Manage project keynotes."""
+"""Manage project keynotes.
+
+Shift+Click:
+Reset window configurations and open.
+"""
 #pylint: disable=E0401,W0613,C0111,C0103,C0302,W0703
 import os
 import os.path as op
@@ -287,11 +291,14 @@ class EditRecordWindow(forms.WPFWindow):
     def to_sentence(self, sender, args):
         self.active_text = self.active_text.capitalize()
 
-    def to_reserved(self, sender, args):
-        self.active_text = "-- reserved for future use --"
-
-    def to_donotuse(self, sender, args):
-        self.active_text = "!! do not use !! " + self.active_text
+    def select_template(self, sender, args):
+        # TODO: get templates from config
+        template = forms.SelectFromList.show(
+            ["-- reserved for future use --", "!! do not use !! "],
+            title='Select Template',
+            owner=self)
+        if template:
+            self.active_text = template
 
     def translate(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -326,7 +333,7 @@ class EditRecordWindow(forms.WPFWindow):
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name):
+    def __init__(self, xaml_file_name, reset_config=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # verify keynote file existence
@@ -355,7 +362,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "with other projects. Users should NOT be making changes to "
                 "the existing keynote file during the conversion process.\n"
                 "Are you sure you want to convert?",
-                options=["Convert", "Give me more info"])
+                options=["Convert",
+                         "Select a different keynote file",
+                         "Give me more info"])
             if res:
                 if res == "Convert":
                     try:
@@ -370,6 +379,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         logger.debug('Legacy conversion failed | %s' % convex)
                         forms.alert("Conversion failed! %s" % convex,
                                     exitscript=True)
+                elif res == "Select a different keynote file":
+                    self._change_kfile()
                 elif res == "Give me more info":
                     script.open_url('https://eirannejad.github.io/pyRevit')
                     script.exit()
@@ -377,16 +388,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Keynote file is not yet converted.",
                             exitscript=True)
 
-
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
                                     parent_key='',
                                     locked=False, owner='',
                                     children=None)
 
+        self._needs_update = False
         self._config = script.get_config()
         self._used_keysdict = self.get_used_keynote_elements()
-        self.load_config()
+        self.load_config(reset_config)
         self.search_tb.Focus()
 
     @property
@@ -419,15 +430,24 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return get_keynote_pcommands()[self.postcmd_idx]
 
     @property
+    def postcmd_options(self):
+        return [self.userknote_rb, self.materialknote_rb, self.elementknote_rb]
+
+    @property
     def postcmd_idx(self):
-        return self.keynotetype_cb.SelectedIndex
+        # return self.keynotetype_cb.SelectedIndex
+        for idx, postcmd_op in enumerate(self.postcmd_options):
+            if postcmd_op.IsChecked:
+                return idx
 
     @postcmd_idx.setter
     def postcmd_idx(self, index):
-        self.keynotetype_cb.ItemsSource = \
-            [str(x).replace('UI.PostableCommand', '')
-             for x in get_keynote_pcommands()]
-        self.keynotetype_cb.SelectedIndex = index
+        # self.keynotetype_cb.ItemsSource = \
+        #     [str(x).replace('UI.PostableCommand', '')
+        #      for x in get_keynote_pcommands()]
+        # self.keynotetype_cb.SelectedIndex = index
+        postcmd_op = self.postcmd_options[index]
+        postcmd_op.IsChecked = True
 
     @property
     def selected_keynote(self):
@@ -435,9 +455,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @property
     def selected_category(self):
+        # grab selected category
         cat = self.categories_tv.SelectedItem
-        if cat and cat != self._allcat:
-            return cat
+        if cat:
+            # verify category is not all-categories item
+            if cat != self._allcat:
+                return cat
+            # grab category from keynote list
+            elif self.selected_keynote \
+                    and not self.selected_keynote.parent_key:
+                return self.selected_keynote
 
     @selected_category.setter
     def selected_category(self, cat_key):
@@ -515,10 +542,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         script.save_config()
 
-    def load_config(self):
+    def load_config(self, reset_config):
         # load last window geom
-        last_window_geom_dict = \
-            self._config.get_option('last_window_geom', {})
+        if reset_config:
+            last_window_geom_dict = {}
+        else:
+            last_window_geom_dict = \
+                self._config.get_option('last_window_geom', {})
         if last_window_geom_dict and self._kfile in last_window_geom_dict:
             width, height, top, left = last_window_geom_dict[self._kfile]
         else:
@@ -533,21 +563,37 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 framework.Windows.WindowStartupLocation.CenterScreen
 
         # load last postable commands id
-        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
+        if reset_config:
+            last_postcmd_dict = {}
+        else:
+            last_postcmd_dict = \
+                self._config.get_option('last_postcmd_idx', {})
         if last_postcmd_dict and self._kfile in last_postcmd_dict:
             self.postcmd_idx = last_postcmd_dict[self._kfile]
         else:
             self.postcmd_idx = 0
 
         # load last category
-        last_category_dict = self._config.get_option('last_category', {})
+        if reset_config:
+            last_category_dict = {}
+        else:
+            last_category_dict = \
+                self._config.get_option('last_category', {})
         if last_category_dict and self._kfile in last_category_dict:
             self._update_ktree(active_catkey=last_category_dict[self._kfile])
+        else:
+            self.selected_category = self._allcat
 
         # load last search term
-        last_searchterm_dict = self._config.get_option('last_search_term', {})
+        if reset_config:
+            last_searchterm_dict = {}
+        else:
+            last_searchterm_dict = \
+                self._config.get_option('last_search_term', {})
         if last_searchterm_dict and self._kfile in last_searchterm_dict:
             self.search_term = last_searchterm_dict[self._kfile]
+        else:
+            self.search_term = ""
 
     def _convert_existing(self):
         # make a copy of exsing
@@ -569,9 +615,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 with revit.Transaction("Set Keynote File"):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
                 self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+                return self._kfile
             except Exception as skex:
                 forms.alert(str(skex))
-                return
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -591,7 +637,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_ktree_knotes(self, fast=False):
         keynote_filter = self.search_term if self.search_term else None
-        if fast and self.search_term:
+
+        # update the visible keys in active view if filter is ViewOnly
+        if keynote_filter \
+                and kdb.RKeynoteFilters.ViewOnly.code in keynote_filter:
+            visible_keys = \
+                [x.TagText for x in
+                 revit.query.get_visible_keynotes(revit.active_view)]
+            kdb.RKeynoteFilters.ViewOnly.set_keys(visible_keys)
+
+        if fast and keynote_filter:
             # fast filtering using already loaded content
             active_tree = list(self._cache)
         else:
@@ -638,6 +693,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # show keynotes
         self.keynotes_tv.ItemsSource = filtered_keynotes
 
+    def _update_catedit_buttons(self):
+        self.catEditButtons.IsEnabled = \
+            self.selected_category and not self.selected_category.locked
+
+    def _update_knoteedit_buttons(self):
+        if self.selected_keynote \
+                and not self.selected_keynote.locked:
+            self.keynoteEditButtons.IsEnabled = \
+                bool(self.selected_keynote.parent_key)
+            self.catEditButtons.IsEnabled = \
+                not self.keynoteEditButtons.IsEnabled
+        else:
+            self.keynoteEditButtons.IsEnabled = False
+
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
         logger.debug('New search term: %s', self.search_term)
@@ -655,31 +724,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def custom_filter(self, sender, args):
-        sterm = forms.SelectFromList.show(
+        sfilter = forms.SelectFromList.show(
             kdb.RKeynoteFilters.get_available_filters(),
-            title='Select Filter')
-        if sterm:
-            # add space so user can type after
-            self.search_term = \
-                sterm.code + " " \
-                + kdb.RKeynoteFilters.remove_filters(self.search_term)
+            title='Select Filter',
+            owner=self)
+        if sfilter:
+            self.search_term = sfilter.format_term(self.search_term)
 
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
-        if self.selected_category and not self.selected_category.locked:
-            self.subkeynoteAdd.IsEnabled = True
-            self.catEditButtons.IsEnabled = True
-        else:
-            self.subkeynoteAdd.IsEnabled = False
-            self.catEditButtons.IsEnabled = False
+        self._update_catedit_buttons()
         self._update_ktree_knotes()
 
     def selected_keynote_changed(self, sender, args):
         logger.debug('New keynote selected: %s', self.selected_keynote)
-        if self.selected_keynote and not self.selected_keynote.locked:
-            self.keynoteEditButtons.IsEnabled = True
-        else:
-            self.keynoteEditButtons.IsEnabled = False
+        self._update_catedit_buttons()
+        self._update_knoteedit_buttons()
 
     def refresh(self, sender, args):
         if self._conn:
@@ -694,6 +754,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                  kdb.EDIT_MODE_ADD_CATEG).show()
             if new_cat:
                 self.selected_category = new_cat.key
+                # make sure to relaod on close
+                self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
         except Exception as ex:
@@ -701,26 +763,38 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def edit_category(self, sender, args):
         selected_category = self.selected_category
+        selected_keynote = self.selected_keynote
+        # determine where the category is coming from
+        # selected category in drop-down
         if selected_category:
-            if selected_category.locked:
+            target_keynote = selected_category
+        # or selected category in keynotes list
+        elif selected_keynote and not selected_keynote.parent_key:
+            target_keynote = selected_keynote
+        if target_keynote:
+            if target_keynote.locked:
                 forms.alert('Category is locked and is being edited by {}. '
                             'Wait until their changes are committed. '
                             'Meanwhile you can use or modify the keynotes '
                             'under this category.'
-                            .format('\"%s\"' % selected_category.owner
-                                    if selected_category.owner
+                            .format('\"%s\"' % target_keynote.owner
+                                    if target_keynote.owner
                                     else 'and unknown user'))
             else:
                 try:
                     EditRecordWindow(self, self._conn,
                                      kdb.EDIT_MODE_EDIT_CATEG,
-                                     rkeynote=selected_category).show()
+                                     rkeynote=target_keynote).show()
+                    # make sure to relaod on close
+                    self._needs_update = True
                 except System.TimeoutException as toutex:
                     forms.alert(toutex.Message)
                 except Exception as ex:
                     forms.alert(str(ex))
                 finally:
                     self._update_ktree()
+                    if selected_keynote:
+                        self._update_ktree_knotes()
 
     def rekey_category(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -729,7 +803,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # TODO: ask user which category to move the subkeynotes or delete?
         selected_category = self.selected_category
         if selected_category:
-            if self.current_keynotes:
+            if selected_category.has_children():
                 forms.alert("Category \"%s\" is not empty. "
                             "Delete all its keynotes first."
                             % selected_category.key)
@@ -743,6 +817,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_category(self._conn, selected_category.key)
+                        # make sure to relaod on close
+                        self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(toutex.Message)
                     except Exception as ex:
@@ -771,6 +847,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=parent_key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -785,6 +863,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=selected_keynote.key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -801,6 +881,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=self.selected_keynote.text,
                     pkey=self.selected_keynote.parent_key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -826,6 +908,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_keynote(self._conn, selected_keynote.key)
+                        # make sure to relaod on close
+                        self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(toutex.Message)
                     except Exception as ex:
@@ -841,6 +925,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._conn,
                     kdb.EDIT_MODE_EDIT_KEYNOTE,
                     rkeynote=self.selected_keynote).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -854,19 +940,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def show_keynote(self, sender, args):
         if self.selected_keynote:
             self.Close()
-            for kkey, kids in self.get_used_keynote_elements().items():
-                if kkey == self.selected_keynote.key:
-                    for kid in kids:
-                        source = viewname = ''
-                        kel = revit.doc.GetElement(kid)
-                        if kel:
-                            source = kel.Parameter[
-                                DB.BuiltInParameter.KEY_SOURCE_PARAM].AsString()
-                            vel = revit.doc.GetElement(kel.OwnerViewId)
-                            if vel:
-                                viewname = revit.query.get_name(vel)
-                        print('{} \"{}\" Keynote @ \"{}\"'
-                              .format(output.linkify(kid), source, viewname))
+            kids = self.get_used_keynote_elements() \
+                       .get(self.selected_keynote.key, [])
+            for kid in kids:
+                source = viewname = ''
+                kel = revit.doc.GetElement(kid)
+                ehist = revit.query.get_history(kel)
+                if kel:
+                    source = kel.Parameter[
+                        DB.BuiltInParameter.KEY_SOURCE_PARAM].AsString()
+                    vel = revit.doc.GetElement(kel.OwnerViewId)
+                    if vel:
+                        viewname = revit.query.get_name(vel)
+                # prepare report
+                report = \
+                    '{} \"{}\" Keynote @ \"{}\"'.format(
+                        output.linkify(kid),
+                        source,
+                        viewname
+                        )
+
+                if ehist:
+                    report += \
+                        ' - Last Edited By \"{}\"'.format(ehist.last_changed_by)
+
+                print(report)
 
     def place_keynote(self, sender, args):
         self.Close()
@@ -900,8 +998,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         forms.alert("Not yet implemented. Coming soon.")
 
     def change_keynote_file(self, sender, args):
-        self._change_kfile()
-        self.Close()
+        if self._change_kfile():
+            # make sure to relaod on close
+            self._needs_update = True
+            self.Close()
 
     def show_keynote_file(self, sender, args):
         coreutils.show_entry_in_explorer(self._kfile)
@@ -948,13 +1048,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
 
-
     def update_model(self, sender, args):
         self.Close()
 
     def window_closing(self, sender, args):
-        with revit.Transaction('Update Keynotes'):
-            revit.update.update_linked_keynotes(doc=revit.doc)
+        if self._needs_update:
+            with revit.Transaction('Update Keynotes'):
+                revit.update.update_linked_keynotes(doc=revit.doc)
 
         try:
             self.save_config()
@@ -971,6 +1071,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
 
 try:
-    KeynoteManagerWindow('KeynoteManagerWindow.xaml').show(modal=True)
+    KeynoteManagerWindow(
+        xaml_file_name='KeynoteManagerWindow.xaml',
+        reset_config=__shiftclick__ #pylint: disable=undefined-variable
+        ).show(modal=True)
 except Exception as kmex:
     forms.alert(str(kmex))

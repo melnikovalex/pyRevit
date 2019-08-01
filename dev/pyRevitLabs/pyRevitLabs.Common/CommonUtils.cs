@@ -9,7 +9,7 @@ using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
@@ -28,7 +28,6 @@ namespace pyRevitLabs.Common {
         public static bool VerifyPythonScript(string path) {
             return VerifyFile(path) && path.ToLower().EndsWith(".py");
         }
-
 
         // helper for deleting directories recursively
         // @handled @logs
@@ -61,7 +60,7 @@ namespace pyRevitLabs.Common {
         // helper for copying a directory recursively
         // @handled @logs
         public static void CopyDirectory(string sourceDir, string destDir) {
-            ConfirmPath(destDir);
+            EnsurePath(destDir);
             logger.Debug("Copying \"{0}\" to \"{1}\"", sourceDir, destDir);
             try {
                 // create all of the directories
@@ -81,19 +80,21 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static void ConfirmPath(string path) {
+        public static void EnsurePath(string path) {
             Directory.CreateDirectory(path);
         }
 
-        public static void ConfirmFile(string filepath) {
-            ConfirmPath(Path.GetDirectoryName(filepath));
+        public static void EnsureFile(string filepath) {
+            EnsurePath(Path.GetDirectoryName(filepath));
             if (!System.IO.File.Exists(filepath)) {
                 var file = System.IO.File.CreateText(filepath);
                 file.Close();
             }
         }
 
-        public static bool ConfirmFileNameIsUnique(string targetDir, string fileName) {
+        public static string EnsureFileExtension(string filepath, string extension) => Path.ChangeExtension(filepath, extension);
+
+        public static bool EnsureFileNameIsUnique(string targetDir, string fileName) {
             foreach (var subdir in Directory.GetDirectories(targetDir))
                 if (Path.GetFileNameWithoutExtension(subdir).ToLower() == fileName.ToLower())
                     return false;
@@ -105,10 +106,30 @@ namespace pyRevitLabs.Common {
             return true;
         }
 
+        public static WebClient GetWebClient() {
+            if (CheckInternetConnection()) {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                return new WebClient();
+            }
+            else
+                throw new pyRevitNoInternetConnectionException();
+        }
+
+        public static HttpWebRequest GetHttpWebRequest(string url) {
+            if (CheckInternetConnection()) {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.UserAgent = "pyrevit-cli";
+                return request;
+            }
+            else
+                throw new pyRevitNoInternetConnectionException();
+        }
+
         public static string DownloadFile(string url, string destPath) {
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                using (var client = new WebClient()) {
+                using (var client = GetWebClient()) {
                     client.DownloadFile(url, destPath);
                 }
             }
@@ -163,8 +184,7 @@ namespace pyRevitLabs.Common {
 
         public static bool VerifyUrl(string url) {
             if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest request = GetHttpWebRequest(url);
                 try {
                     var response = request.GetResponse();
                 }
@@ -226,7 +246,7 @@ namespace pyRevitLabs.Common {
                 );
             string appStartMenuPath = Path.Combine(commonStartMenuPath, "Programs", appName);
 
-            ConfirmPath(appStartMenuPath);
+            EnsurePath(appStartMenuPath);
 
             string shortcutLocation = Path.Combine(appStartMenuPath, shortCutName + ".lnk");
             WshShell shell = new WshShell();
@@ -302,6 +322,24 @@ namespace pyRevitLabs.Common {
                 return dst;
             }
             return src;
+        }
+
+        // https://stackoverflow.com/a/49922533/2350244
+        public static string GenerateRandomName(int len = 16) {
+            Random r = new Random();
+            string[] consonants = { "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "l", "n", "p", "q", "r", "s", "sh", "zh", "t", "v", "w", "x" };
+            string[] vowels = { "a", "e", "i", "o", "u", "ae", "y" };
+            string Name = "";
+            Name += consonants[r.Next(consonants.Length)].ToUpper();
+            Name += vowels[r.Next(vowels.Length)];
+            int b = 2; //b tells how many times a new letter has been added. It's 2 right now because the first two letters are already in the name.
+            while (b < len) {
+                Name += consonants[r.Next(consonants.Length)];
+                b++;
+                Name += vowels[r.Next(vowels.Length)];
+                b++;
+            }
+            return Name;
         }
     }
 }

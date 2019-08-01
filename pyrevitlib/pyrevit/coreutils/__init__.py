@@ -4,7 +4,7 @@ Example:
     >>> from pyrevit import coreutils
     >>> coreutils.cleanup_string('some string')
 """
-
+#pylint: disable=invalid-name
 import os
 import os.path as op
 import re
@@ -18,7 +18,7 @@ import stat
 import codecs
 import math
 from collections import defaultdict
-import _winreg as wr
+import _winreg as wr     #pylint: disable=import-error
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
@@ -49,7 +49,7 @@ UNICODE_NONPRINTABLE_CHARS = [
     ]
 
 
-class Timer:
+class Timer(object):
     """Timer class using python native time module.
 
     Example:
@@ -71,7 +71,7 @@ class Timer:
         return time.time() - self.start
 
 
-class ScriptFileParser:
+class ScriptFileParser(object):
     """Parse python script to extract variables and docstrings.
 
     Primarily designed to assist pyRevit in determining script configurations
@@ -284,7 +284,7 @@ SPECIAL_CHARS = {' ': '',
                  r'\/': '', '\\': ''}
 
 
-def cleanup_string(input_str):
+def cleanup_string(input_str, skip=None):
     """Replace special characters in string with another string.
 
     This function was created to help cleanup pyRevit command unique names from
@@ -303,6 +303,8 @@ def cleanup_string(input_str):
     """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
+        if skip and char in skip:
+            continue
         input_str = input_str.replace(char, repl)
 
     return input_str
@@ -367,87 +369,6 @@ def inspect_calling_scope_global_var(variable_name):
         if frame is None:
             return None
     return frame.f_locals[variable_name]
-
-
-def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
-    """Find loaded assembly based on name, partial name, or location.
-
-    Args:
-        asm_info (str): name or location of the assembly
-        by_partial_name (bool): returns all assemblies that has the asm_info
-        by_location (bool): returns all assemblies matching location
-
-    Returns:
-        list: List of all loaded assemblies matching the provided info
-        If only one assembly has been found, it returns the assembly.
-        :obj:`None` will be returned if assembly is not loaded.
-    """
-    loaded_asm_list = []
-    for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
-        if by_partial_name:
-            if asm_info.lower() in \
-                    safe_strtype(loaded_assembly.GetName().Name).lower():
-                loaded_asm_list.append(loaded_assembly)
-        elif by_location:
-            try:
-                if op.normpath(loaded_assembly.Location) == \
-                        op.normpath(asm_info):
-                    loaded_asm_list.append(loaded_assembly)
-            except Exception:
-                continue
-        elif asm_info.lower() == \
-                safe_strtype(loaded_assembly.GetName().Name).lower():
-            loaded_asm_list.append(loaded_assembly)
-
-    return loaded_asm_list
-
-
-def load_asm(asm_name):
-    """Load assembly by name into current domain.
-
-    Args:
-        asm_name (str): assembly name
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    return framework.AppDomain.CurrentDomain.Load(asm_name)
-
-
-def load_asm_file(asm_file):
-    """Load assembly by file into current domain.
-
-    Args:
-        asm_file (str): assembly file path
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    try:
-        return framework.Assembly.LoadFrom(asm_file)
-    except Exception:
-        return None
-
-
-def find_type_by_name(assembly, type_name):
-    """Find type by name in assembly.
-
-    Args:
-        assembly (:obj:`Assembly`): assembly to find the type in
-        type_name (str): type name
-
-    Returns:
-        returns the type if found.
-
-    Raises:
-        :obj:`PyRevitException` if type not found.
-    """
-    base_class = assembly.GetType(type_name)
-    if base_class is not None:
-        return base_class
-    else:
-        raise PyRevitException('Can not find base class type: {}'
-                               .format(type_name))
 
 
 def make_canonical_name(*args):
@@ -828,6 +749,7 @@ def fully_remove_dir(dir_path):
         dir_path (str): directory path
     """
     def del_rw(action, name, exc):   #pylint: disable=W0613
+        """Force delete entry."""
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
 
@@ -845,9 +767,12 @@ def cleanup_filename(file_name):
 
     Example:
         >>> cleanup_filename('Myfile-(3).txt')
-        "Myfile3.txt"
+        "Myfile(3).txt"
+
+        >>> cleanup_filename('Perforations 1/8" (New)')
+        "Perforations 18 (New).txt"
     """
-    return re.sub(r'[^\w_.)( -#]', '', file_name)
+    return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
@@ -911,7 +836,7 @@ def _inc_or_dec_string(str_id, shift):
     return next_str[::-1]
 
 
-def increment_str(input_str, step):
+def increment_str(input_str, step=1):
     """Incremenet identifier.
 
     Args:
@@ -928,7 +853,7 @@ def increment_str(input_str, step):
     return _inc_or_dec_string(input_str, abs(step))
 
 
-def decrement_str(input_str, step):
+def decrement_str(input_str, step=1):
     """Decrement identifier.
 
     Args:
@@ -1359,7 +1284,7 @@ def is_box_visible_on_screens(left, top, width, height):
 
 def fuzzy_search_ratio(target_string, sfilter):
     """Match target string against the filter and return a match ratio.
-    
+
     Args:
         target_string (str): target string
         sfilter (str): search term
@@ -1442,3 +1367,15 @@ def get_reg_key(key, subkey):
         return wr.OpenKey(key, subkey, 0, wr.KEY_READ)
     except Exception:
         return None
+
+
+def kill_tasks(task_name):
+    """Kill running tasks matching task_name
+
+    Args:
+        task_name (str): task name
+
+    Example:
+        >>> kill_tasks('Revit.exe')
+    """
+    os.system("taskkill /f /im %s" % task_name)

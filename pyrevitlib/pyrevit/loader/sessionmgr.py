@@ -16,9 +16,9 @@ from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import coreutils
-from pyrevit.framework import FormatterServices
-from pyrevit.framework import Array
+from pyrevit import framework
 from pyrevit.coreutils import Timer
+from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
@@ -28,7 +28,7 @@ from pyrevit.loader import uimaker
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import extensionmgr
-from pyrevit import usagelog
+from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the basetypes first to get all the c-sharp code to compile
@@ -122,9 +122,9 @@ def _perform_onsessionload_ops():
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
-    # asking usagelog module to setup the usage logging system
+    # asking telemetry module to setup the telemetry system
     # (active or not active)
-    usagelog.setup_usage_logfile(uuid_str)
+    telemetry.setup_telemetry_file(uuid_str)
 
     # apply Upgrades
     upgrade.upgrade_existing_pyrevit()
@@ -154,6 +154,13 @@ def _new_session():
         # e.g. liquid templates like {{author}}
         ui_ext.configure()
 
+        # collect all module references from extensions
+        ui_ext_modules = ui_ext.get_all_modules()
+        # make sure they are all loaded
+        assmutils.load_asm_files(ui_ext_modules)
+        # and update env information
+        sessioninfo.update_loaded_pyrevit_referenced_modules(ui_ext_modules)
+
         # create a dll assembly and get assembly info
         ext_asm_info = asmmaker.create_assembly(ui_ext)
         if not ext_asm_info:
@@ -174,10 +181,20 @@ def _new_session():
     # run startup scripts for this ui extension, if any
     for assm_ext in assembled_exts:
         if assm_ext.ext.startup_script:
+            # build syspaths for the startup script
+            sys_paths = [assm_ext.ext.directory]
+            if assm_ext.ext.library_path:
+                sys_paths.insert(0, assm_ext.ext.library_path)
+
             mlogger.info('Running startup tasks for %s', assm_ext.ext.name)
             mlogger.debug('Executing startup script for extension: %s',
                           assm_ext.ext.name)
-            execute_script(assm_ext.ext.startup_script)
+
+            # now run
+            execute_script(
+                assm_ext.ext.startup_script,
+                sys_paths=sys_paths
+                )
 
     # update/create ui (needs the assembly to link button actions
     # to commands saved in the dll)
@@ -296,8 +313,8 @@ class PyRevitExternalCommandType(object):
         return getattr(self._extcmd, 'baked_scriptSource', None)
 
     @property
-    def alternate_script(self):
-        return getattr(self._extcmd, 'baked_alternateScriptSource', None)
+    def config_script(self):
+        return getattr(self._extcmd, 'baked_configScriptSource', None)
 
     @property
     def syspaths(self):
@@ -351,7 +368,7 @@ def find_all_commands(category_set=None, cache=True):
     else:
         pyrevit_extcmds = []
         for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-            loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+            loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
             if loaded_assm:
                 all_exported_types = loaded_assm[0].GetTypes()
 
@@ -414,7 +431,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     mlogger.debug('Searching for pyrevit command: %s', pyrevitcmd_unique_id)
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
         mlogger.debug('Expecting assm: %s', loaded_assm_name)
-        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+        loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
             mlogger.debug('Found assm: %s', loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
@@ -432,7 +449,9 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
 def create_tmp_commanddata():
     tmp_cmd_data = \
-        FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
+        framework.FormatterServices.GetUninitializedObject(
+            UI.ExternalCommandData
+            )
     tmp_cmd_data.Application = HOST_APP.uiapp
     # tmp_cmd_data.IsReadOnly = False
     # tmp_cmd_data.View = None
@@ -442,20 +461,20 @@ def create_tmp_commanddata():
 
 def execute_command_cls(extcmd_type, arguments=None,
                         clean_engine=False, fullframe_engine=False,
-                        alternate_mode=False):
+                        config_mode=False):
 
     command_instance = extcmd_type()
     # this is a manual execution from python code and not by user
-    command_instance.executedFromUI = False
+    command_instance.ExecutedFromUI = False
     # pass the arguments to the instance
     if arguments:
-        command_instance.argumentList = Array[str](arguments)
+        command_instance.argumentList = framework.Array[str](arguments)
     # force using clean engine
     command_instance.baked_needsCleanEngine = clean_engine
     # force using fullframe engine
     command_instance.baked_needsFullFrameEngine = fullframe_engine
-    # force using the alternate script
-    command_instance.altScriptModeOverride = alternate_mode
+    # force using the config script
+    command_instance.ConfigScriptMode = config_mode
 
     re = command_instance.Execute(create_tmp_commanddata(),
                                   '',
@@ -484,7 +503,7 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path, arguments=None,
+def execute_script(script_path, arguments=None, sys_paths=None,
                    clean_engine=True, fullframe_engine=True):
     """Executes a script using pyRevit script executor.
 
@@ -499,33 +518,35 @@ def execute_script(script_path, arguments=None,
     from pyrevit.coreutils import DEFAULT_SEPARATOR
     from pyrevit.framework import clr
 
-    executor = loadertypes.ScriptExecutor()
     script_name = op.basename(script_path)
-    sys_paths = DEFAULT_SEPARATOR.join([MAIN_LIB_DIR,
-                                        MISC_LIB_DIR])
+    core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
+    if sys_paths:
+        sys_paths.extend(core_syspaths)
+    else:
+        sys_paths = core_syspaths
 
     cmd_runtime = \
         loadertypes.PyRevitCommandRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
             scriptSource=script_path,
-            alternateScriptSource=None,
-            syspaths=sys_paths,
+            configScriptSource=None,
+            syspaths=DEFAULT_SEPARATOR.join(sys_paths),
             arguments=arguments,
-            helpSource=None,
+            helpSource='',
             cmdName=script_name,
-            cmdBundle=None,
-            cmdExtension=None,
-            cmdUniqueName=None,
+            cmdBundle='',
+            cmdExtension='',
+            cmdUniqueName='',
             needsCleanEngine=clean_engine,
             needsFullFrameEngine=fullframe_engine,
             refreshEngine=False,
             forcedDebugMode=False,
-            altScriptMode=False,
+            configScriptMode=False,
             executedFromUI=False
             )
 
-    executor.ExecuteScript(
+    loadertypes.ScriptExecutor.ExecuteScript(
         clr.Reference[loadertypes.PyRevitCommandRuntime](cmd_runtime)
         )
 

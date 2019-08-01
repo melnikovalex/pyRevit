@@ -26,7 +26,7 @@ else:
     if not selection.is_empty:
         logger.debug('Getting views from selection.')
         for el in selection:
-            if el.Category and el.Category.Name == 'Views':
+            if el.Category and el.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Views):
                 logger.debug('Selected element referencing: {}'
                              .format(el.Name))
                 target_view = revit.query.get_view_by_name(el.Name)
@@ -35,7 +35,7 @@ else:
                                  .format(revit.query.get_name(target_view)))
                     selected_views.append(target_view)
     else:
-        selected_view = revit.activeview
+        selected_view = revit.active_view
         if not isinstance(selected_view, DB.View):
             forms.alert('Active view must be placable on a sheet.', exitscript=True)
         logger.debug('Selected view: {}'.format(selected_view))
