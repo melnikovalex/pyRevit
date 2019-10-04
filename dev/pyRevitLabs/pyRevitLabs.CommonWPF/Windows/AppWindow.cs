@@ -8,8 +8,8 @@ using System.ComponentModel;
 using System.Windows.Data;
 
 // packages
-using MahApps.Metro;
-using MahApps.Metro.Controls;
+using pyRevitLabs.MahAppsMetro;
+using pyRevitLabs.MahAppsMetro.Controls;
 
 namespace pyRevitLabs.CommonWPF.Windows {
     /// <summary>
@@ -54,6 +54,7 @@ namespace pyRevitLabs.CommonWPF.Windows {
             }
 
             RightWindowCommands = windowButtons;
+            LeftWindowCommands = new WindowCommands();
 
             TitleCharacterCasing = CharacterCasing.Normal;
             SaveWindowPosition = true;

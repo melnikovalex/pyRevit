@@ -17,18 +17,14 @@ logger = get_logger(__name__)
 
 COREUPDATE_TRIGGER = 'COREUPDATE'
 
-COREUPDATE_MESSAGE = '<div style="background:#F7F3F2; color:#C64325; ' \
-                                 'padding:20px; margin:10px 0px 10px 0px; ' \
-                                 'border: 2px solid #C64325; ' \
-                                 'border-radius:10px;">' \
-                     ':warning_sign:\n\nIMPORTANT:\n' \
+COREUPDATE_MESSAGE = '<div class="coreupdatewarn">' \
+                     '<strong>IMPORTANT</strong>\n' \
                      'pyRevit has a major core update. This update ' \
                      '<u>can not</u> be applied when Revit is running. ' \
-                     'Please close all Revit instances, and run the tool ' \
-                     'listed below to update the repository. Start Revit ' \
+                     'Please close all Revit instances, and update the clone ' \
+                     'using the pyRevit CLI. Start Revit ' \
                      'again after the update and pyRevit will load with ' \
-                     'the new core changes:\n\n' \
-                     '{home}\\release\\<strong>upgrade.bat</strong>' \
+                     'the new core changes.' \
                      '</div>'
 
 
@@ -100,7 +96,12 @@ def get_all_extension_repos():
 
 
 def update_repo(repo_info):
-    """Update repository."""
+    """Update repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     repo = repo_info.repo
     logger.debug('Updating repo: %s', repo_info.directory)
     head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
@@ -127,7 +128,12 @@ def update_repo(repo_info):
 
 
 def get_updates(repo_info):
-    """Fetch updates on repository."""
+    """Fetch updates on repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     repo = repo_info.repo
     at_least_one_fetch_was_successful = False
 
@@ -153,7 +159,12 @@ def get_updates(repo_info):
 
 
 def has_pending_updates(repo_info):
-    """Check for updates on repository."""
+    """Check for updates on repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     if get_updates(repo_info):
         hist_div = libgit.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
@@ -250,7 +261,7 @@ def update_pyrevit():
         else:
             from pyrevit import script
             output = script.get_output()
-            output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
+            output.print_html(COREUPDATE_MESSAGE)
             logger.debug('Core updates. Skippin update and reload.')
     else:
         logger.warning('No internet access detected. Skipping update.')

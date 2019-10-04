@@ -17,9 +17,8 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-# CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
 CHARTS_JS_PATH = \
-    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/{version}/Chart.min.js"
 
 
 SCRIPT_TEMPLATE = \
@@ -27,7 +26,8 @@ SCRIPT_TEMPLATE = \
     "var chart = new Chart(ctx, {canvas_code});"
 
 
-class ChartsDataSetEncode(JSONEncoder):
+class _ChartsDataSetEncode(JSONEncoder):
+    """JSON encoder for chart data sets."""
     def default(self, dataset_obj): #pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
         for key, value in data_dict.items():
@@ -37,18 +37,27 @@ class ChartsDataSetEncode(JSONEncoder):
         return data_dict
 
 
-class PyRevitOutputChartOptions:
+class PyRevitOutputChartOptions(object):
+    """Chart options wrapper object."""
     def __init__(self):
         pass
 
 
-class PyRevitOutputChartDataset:
+class PyRevitOutputChartDataset(object):
+    """Chart dataset wrapper object."""
     def __init__(self, label):
         self.label = label
         self.data = []
         self.backgroundColor = ''
 
     def set_color(self, *args):
+        """Set dataset color.
+
+        Arguments are expected to be R, G, B, A values.
+
+        Example:
+            >>> dataset_obj.set_color(0xFF, 0x8C, 0x8D, 0.8)
+        """
         if len(args) == 4:
             self.backgroundColor = 'rgba({},{},{},{})'.format(args[0],
                                                               args[1],
@@ -58,22 +67,43 @@ class PyRevitOutputChartDataset:
             self.backgroundColor = '{}'.format(args[0])
 
 
-class PyRevitOutputChartData:
+class PyRevitOutputChartData(object):
+    """Chart data wrapper object."""
     def __init__(self):
         self.labels = ''
         self.datasets = []
 
     def new_dataset(self, dataset_label):
+        """Create new data set.
+
+        Args:
+            dataset_label (str): dataset label
+
+        Returns:
+            :obj:`PyRevitOutputChartDataset`: dataset wrapper object
+
+        Example:
+            >>> chart.data.new_dataset('set_a')
+        """
         new_dataset = PyRevitOutputChartDataset(dataset_label)
         self.datasets.append(new_dataset)
         return new_dataset
 
 
-class PyRevitOutputChart:
-    def __init__(self, output, chart_type=LINE_CHART):
+class PyRevitOutputChart(object):
+    """Chart wrapper object for output window.
+
+    Attributes:
+        output (:obj:`pyrevit.output.PyRevitOutputWindow`):
+            output window wrapper object
+        chart_type (str): chart type name
+    
+    """
+    def __init__(self, output, chart_type=LINE_CHART, version='2.8.0'):
         self._output = output
         self._style = None
         self._width = self._height = None
+        self._version = version
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
@@ -131,7 +161,13 @@ class PyRevitOutputChart:
     def _setup_charts(self):
         cur_head = self._output.get_head_html()
         if CHARTS_JS_PATH not in cur_head:
-            self._output.inject_script('', {'src': CHARTS_JS_PATH})
+            self._output.inject_script(
+                '',
+                {
+                    'src': CHARTS_JS_PATH.format(version=self._version),
+                    'async': 'false',
+                    'defer': 'false'}
+                )
 
     @staticmethod
     def _make_canvas_unique_id():
@@ -153,9 +189,10 @@ class PyRevitOutputChart:
     def _make_charts_script(self, canvas_id):
         return SCRIPT_TEMPLATE.format(
             canvas_id=canvas_id,
-            canvas_code=ChartsDataSetEncode().encode(self))
+            canvas_code=_ChartsDataSetEncode().encode(self))
 
     def randomize_colors(self):
+        """Randomize chart datasets colors."""
         if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
             for dataset in self.data.datasets:
                 dataset.backgroundColor = [random_rgba_color()
@@ -165,15 +202,26 @@ class PyRevitOutputChart:
                 dataset.backgroundColor = random_rgba_color()
 
     def set_width(self, width):
+        """Set chart width on output window."""
         self._width = width
 
     def set_height(self, height):
+        """Set chart height on output window."""
         self._height = height
 
     def set_style(self, html_style):
+        """Set chart styling.
+
+        Args:
+            html_style (str): inline html css styling string
+
+        Example:
+            >>> chart.set_style('height:150px')
+        """
         self._style = html_style
 
     def draw(self):
+        """Request chart to draw itself on output window."""
         self._setup_charts()
         # setup canvas
         canvas_id = self._make_canvas_unique_id()

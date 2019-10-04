@@ -5,6 +5,7 @@ from collections import namedtuple
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
@@ -36,19 +37,28 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering
-    ]
+]
 
 
-DETAIL_CURVES = (DB.DetailLine,
-                 DB.DetailArc,
-                 DB.DetailEllipse,
-                 DB.DetailNurbSpline)
+DETAIL_CURVES = (
+    DB.DetailLine,
+    DB.DetailArc,
+    DB.DetailEllipse,
+    DB.DetailNurbSpline
+)
 
-MODEL_CURVES = (DB.ModelLine,
-                DB.ModelArc,
-                DB.ModelEllipse,
-                DB.ModelNurbSpline)
+MODEL_CURVES = (
+    DB.ModelLine,
+    DB.ModelArc,
+    DB.ModelEllipse,
+    DB.ModelNurbSpline
+)
 
+BUILTINCATEGORIES_VIEW = [
+    DB.BuiltInCategory.OST_Views,
+    DB.BuiltInCategory.OST_ReferenceViewer,
+    DB.BuiltInCategory.OST_Viewers
+]
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
@@ -80,7 +90,23 @@ def get_name(element, title_on_sheet=False):
 
     # have to use the imported Element otherwise
     # AttributeError occurs
-    return Element.Name.__get__(element)
+    if compat.PY3:
+        return element.Name
+    else:
+        return Element.Name.__get__(element)
+
+
+def get_type(element):
+    """Get element type.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.ElementType: type object of given element
+    """
+    type_id = element.GetTypeId()
+    return element.Document.GetElement(type_id)
 
 
 def get_symbol_name(element):
@@ -223,7 +249,7 @@ def get_elements_by_param_value(param_name, param_value,
         return []
 
 
-def get_elements_by_category(element_bicats, elements=None, doc=None):
+def get_elements_by_categories(element_bicats, elements=None, doc=None):
     # if source elements is provided
     if elements:
         return [x for x in elements
@@ -280,6 +306,17 @@ def get_family(family_name, doc=None):
           .WhereElementIsElementType()\
           .ToElements()
     return famsyms
+
+
+def get_families(doc=None, only_editable=True):
+    doc = doc or HOST_APP.doc
+    families = [x.Family for x in set(DB.FilteredElementCollector(doc)
+                                        .WhereElementIsElementType()
+                                        .ToElements())
+                if isinstance(x, (DB.FamilySymbol, DB.AnnotationSymbolType))]
+    if only_editable:
+        return [x for x in families if x.IsEditable]
+    return families
 
 
 def get_noteblock_families(doc=None):
@@ -374,17 +411,18 @@ def get_project_parameters(doc=None):
     # collect shared parameter names
     shared_params = {x.Name: x for x in get_defined_sharedparams()}
 
-    param_bindings = doc.ParameterBindings
-    pb_iterator = param_bindings.ForwardIterator()
-    pb_iterator.Reset()
-
     pp_list = []
-    while pb_iterator.MoveNext():
-        msp = db.ProjectParameter(
-            pb_iterator.Key,
-            param_bindings[pb_iterator.Key],
-            param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
-        pp_list.append(msp)
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+
+        while pb_iterator.MoveNext():
+            msp = db.ProjectParameter(
+                pb_iterator.Key,
+                param_bindings[pb_iterator.Key],
+                param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
+            pp_list.append(msp)
 
     return pp_list
 
@@ -558,13 +596,33 @@ def get_view_by_sheetref(sheet_num, detail_num, doc=None):
         return vport.ViewId
 
 
+def is_schedule(view):
+    """Check if given DB.View is a Revit Schedule.
+
+    Returns False if given view is a DB.ViewSchedule but is a
+        Schedule View Template, or
+        Titleblock Revision Schedule, or
+        Internal Keynote Schedule, or
+        Keynote Legend Schedule
+    """
+    if isinstance(view, DB.ViewSchedule) and not view.IsTemplate:
+        isrevsched = view.IsTitleblockRevisionSchedule
+        isintkeynote = view.IsInternalKeynoteSchedule
+        iskeynotelegend = view.Definition.CategoryId == \
+            get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
+
+        return not (isrevsched or isintkeynote or iskeynotelegend)
+
+    return False
+
+
 def get_all_schedules(doc=None):
     doc = doc or HOST_APP.doc
     all_scheds = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSchedule) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
-    return all_scheds
+    return filter(is_schedule, all_scheds)
 
 
 def get_view_by_name(view_name, doc=None):
@@ -582,7 +640,7 @@ def get_all_referencing_elements(doc=None):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements.append(el.Id)
     return all_referencing_elements
 
@@ -594,7 +652,7 @@ def get_all_referencing_elements_in_view(view):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements_in_view.append(el.Id)
     return all_referencing_elements_in_view
 
@@ -877,8 +935,8 @@ def get_rev_number(revision):
 
 def get_pointclouds(doc=None):
     doc = doc or HOST_APP.doc
-    return get_elements_by_category([DB.BuiltInCategory.OST_PointClouds],
-                                    doc=doc)
+    return get_elements_by_categories([DB.BuiltInCategory.OST_PointClouds],
+                                      doc=doc)
 
 
 def get_mep_connections(element):
@@ -1173,3 +1231,90 @@ def get_schema_field_values(element, schema):
 
             field_values[field.FieldName] = value
     return field_values
+
+
+def get_family_type(type_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        for ftype in family_doc.FamilyManager.Types:
+            if ftype.Name == type_name:
+                return ftype
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameter(param_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        for fparam in family_doc.FamilyManager.GetParameters():
+            if fparam.Definition.Name == param_name:
+                return fparam
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        return family_doc.FamilyManager.GetParameters()
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_label_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        dims = DB.FilteredElementCollector(family_doc)\
+                .OfClass(DB.Dimension)\
+                .WhereElementIsNotElementType()
+        label_params = set()
+        for dim in dims:
+            try:
+                # throws exception when dimension can not be labeled
+                if isinstance(dim.FamilyLabel, DB.FamilyParameter):
+                    label_params.add(dim.FamilyLabel)
+            except Exception:
+                pass
+        return label_params
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_door_rooms(door):
+    """Get from/to rooms associated with given door element.
+
+    Args:
+        door (DB.FamilyInstance): door instance
+
+    Returns:
+        tuple(DB.Architecture.Room, DB.Architecture.Room): from/to rooms
+    """
+    door_phase = door.Document.GetElement(door.CreatedPhaseId)
+    return (door.FromRoom[door_phase], door.ToRoom[door_phase])
+
+
+def get_doors(elements=None, doc=None, room_id=None):
+    """Get all doors in active or given document.
+
+    Args:
+        elements (list[DB.Element]): find rooms in given elements instead
+        doc (DB.Document): target document; default is active document
+        room_id (DB.ElementId): only doors associated with given room
+
+    Returns:
+        list[DB.Element]: room instances
+    """
+    doc = doc or HOST_APP.doc
+    all_doors = get_elements_by_categories([DB.BuiltInCategory.OST_Doors],
+                                           elements=elements,
+                                           doc=doc)
+    if room_id:
+        room_doors = []
+        for door in all_doors:
+            from_room, to_room = get_door_rooms(door)
+            if (from_room and from_room.Id == room_id) \
+                    or (to_room and to_room.Id == room_id):
+                room_doors.append(door)
+        return room_doors
+    else:
+        return list(all_doors)

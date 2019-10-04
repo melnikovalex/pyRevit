@@ -2,9 +2,7 @@
 #pylint: disable=E0401,E0602,W0703,W0613,C0103
 import sys
 
-from pyrevit import HOST_APP
 from pyrevit import versionmgr
-from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
@@ -12,13 +10,7 @@ from pyrevit import script
 from pyrevit.userconfig import user_config
 
 
-__context__ = 'zerodoc'
-
-__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
-          'detailed information on how pyrevit works, updates about the ' \
-          'new tools and changes, and a lot of other information there.'
-
-Revit = TargetApps.Revit
+logger = script.get_logger()
 
 
 class AboutWindow(forms.WPFWindow):
@@ -39,15 +31,16 @@ class AboutWindow(forms.WPFWindow):
             self.branch_name = pyrvt_repo.branch
             self.show_element(self.git_commit)
             self.show_element(self.git_branch)
-        except Exception:
+        except Exception as getbranch_ex:
+            logger.debug('Error getting branch: %s', getbranch_ex)
             # other wise try to get deployment name
-            attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
+            attachment = user_config.get_current_attachment()
             if attachment:
                 try:
-                    self.deployname = attachment.Clone.GetDeployment().Name
+                    self.deployname = attachment.Clone.Deployment.Name
                     self.show_element(self.repo_deploy)
-                except Exception:
-                    pass
+                except Exception as getdepl_ex:
+                    logger.debug('Error getting depoyment: %s', getdepl_ex)
 
         # get cli version
         pyrvt_cli_version = 'v' + versionmgr.get_pyrevit_cli_version()
@@ -65,7 +58,7 @@ class AboutWindow(forms.WPFWindow):
         self.pyrevit_engine.Text = \
             'Running on IronPython {} (cpython {})'\
                 .format(sys.version.split('(')[0].strip(),
-                        '.'.join(list(str(self.cpyengine.Version))))
+                        '.'.join(list(str(user_config.cpython_engine_version))))
 
         rocketmodetext = \
             'Rocket-mode {}' \
@@ -80,8 +73,11 @@ class AboutWindow(forms.WPFWindow):
     def opencredits(self, sender, args):
         script.open_url(urls.PYREVIT_CREDITS)
 
-    def opendocs(self, sender, args):
-        script.open_url(urls.PYREVIT_DOCS)
+    def openwiki(self, sender, args):
+        script.open_url(urls.PYREVIT_WIKI)
+
+    def opentwitter(self, sender, args):
+        script.open_url(urls.PYREVIT_TWITTER)
 
     def openblog(self, sender, args):
         script.open_url(urls.PYREVIT_BLOG)
@@ -93,7 +89,7 @@ class AboutWindow(forms.WPFWindow):
         script.open_url(urls.PYREVIT_YOUTUBE)
 
     def opensupportpage(self, sender, args):
-        script.open_url(urls.PYREVIT_PATREON)
+        script.open_url(urls.PYREVIT_SUPPORT)
 
     def opengithubcommits(self, sender, args):
         if self.branch_name:

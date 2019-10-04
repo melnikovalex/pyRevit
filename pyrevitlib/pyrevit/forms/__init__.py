@@ -8,14 +8,19 @@ import sys
 import os
 import os.path as op
 import string
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import threading
 from functools import wraps
 import datetime
 import webbrowser
 
-from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR, PyRevitCPythonNotSupported
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
+
+if compat.PY3:
+    raise PyRevitCPythonNotSupported('pyrevit.forms')
+
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
@@ -42,11 +47,23 @@ DEFAULT_SEARCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_HEIGHT = 100
 DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
-
+DEFAULT_RECOGNIZE_ACCESS_KEY = False
 
 WPF_HIDDEN = framework.Windows.Visibility.Hidden
 WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
 WPF_VISIBLE = framework.Windows.Visibility.Visible
+
+
+XAML_FILES_DIR = op.dirname(__file__)
+
+
+ParamDef = namedtuple('ParamDef', ['name', 'istype'])
+"""Parameter definition tuple.
+
+Attributes:
+    name (str): parameter name
+    istype (bool): true if type parameter, otherwise false
+"""
 
 
 class WPFWindow(framework.Windows.Window):
@@ -59,7 +76,10 @@ class WPFWindow(framework.Windows.Window):
 
     Example:
         >>> from pyrevit import forms
-        >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
+        >>> layout = '<Window ' \
+        >>>          'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" ' \
+        >>>          'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" ' \
+        >>>          'ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
@@ -67,28 +87,44 @@ class WPFWindow(framework.Windows.Window):
         >>> w.show()
     """
 
-    def __init__(self, xaml_source, literal_string=False, handle_esc=True):
+    def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
-        # self.Parent = self
-        wih = Interop.WindowInteropHelper(self)
-        wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+        # load xaml
+        self.load_xaml(
+            xaml_source,
+            literal_string=literal_string,
+            handle_esc=handle_esc,
+            set_owner=set_owner
+            )
+
+    def load_xaml(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
+        # create new id for this window
+        self.window_id = coreutils.new_uuid()
 
         if not literal_string:
             if not op.exists(xaml_source):
                 wpf.LoadComponent(self,
                                   os.path.join(EXEC_PARAMS.command_path,
-                                               xaml_source)
-                                  )
+                                               xaml_source))
             else:
                 wpf.LoadComponent(self, xaml_source)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
-        if handle_esc:
-            self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
-
+        # set properties
+        self.thread_id = framework.get_current_thread_id()
+        if set_owner:
+            self.setup_owner()
         self.setup_icon()
+        self.setup_resources()
+        if handle_esc:
+            self.setup_default_handlers()
 
+    def setup_owner(self):
+        wih = Interop.WindowInteropHelper(self)
+        wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+
+    def setup_resources(self):
         #2c3e50
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
@@ -116,6 +152,12 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            DEFAULT_RECOGNIZE_ACCESS_KEY
+
+    def setup_default_handlers(self):
+        self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
+
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""
         if args.Key == Input.Key.Escape:
@@ -123,13 +165,14 @@ class WPFWindow(framework.Windows.Window):
 
     def setup_icon(self):
         """Setup default window icon."""
-        iconpath = op.join(BIN_DIR, 'window_icon.png')
+        iconpath = op.join(BIN_DIR, 'pyrevit_settings.png')
         self.Icon = utils.bitmap_from_file(iconpath)
 
     def show(self, modal=False):
         """Show window."""
         if modal:
             return self.ShowDialog()
+        # else open non-modal
         self.Show()
 
     def show_dialog(self):
@@ -152,8 +195,26 @@ class WPFWindow(framework.Windows.Window):
         else:
             wpf_element.Source = utils.bitmap_from_file(image_file)
 
+    def dispatch(self, func, *args, **kwargs):
+        if framework.get_current_thread_id() == self.thread_id:
+            t = threading.Thread(
+                target=func,
+                args=args,
+                kwargs=kwargs
+                )
+            t.start()
+        else:
+            # ask ui thread to call the func with args and kwargs
+            self.Dispatcher.Invoke(
+                System.Action(
+                    lambda: func(*args, **kwargs)
+                    ),
+                Threading.DispatcherPriority.Background
+                )
+
     @property
     def pyrevit_version(self):
+        """Active pyRevit formatted version e.g. '4.9-beta'"""
         return 'pyRevit {}'.format(
             versionmgr.get_pyrevit_version().get_formatted()
             )
@@ -211,7 +272,7 @@ class WPFWindow(framework.Windows.Window):
         for wpfel in wpf_elements:
             wpfel.IsEnabled = True
 
-    def handle_url_click(self, sender, args):
+    def handle_url_click(self, sender, args): #pylint: disable=unused-argument
         """Callback for handling click on package website url"""
         return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
 
@@ -232,7 +293,7 @@ class TemplateUserInputWindow(WPFWindow):
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source),
+                           op.join(XAML_FILES_DIR, self.xaml_source),
                            handle_esc=True)
         self.Title = title or 'pyRevit'
         self.Width = width
@@ -265,8 +326,8 @@ class TemplateUserInputWindow(WPFWindow):
         Args:
             context (any): window context element(s)
             title (str): window title
-            width (str): window width
-            height (str): window height
+            width (int): window width
+            height (int): window height
             **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
@@ -277,7 +338,7 @@ class TemplateUserInputWindow(WPFWindow):
 class TemplateListItem(object):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item, checkable=True, name_attr=None):
+    def __init__(self, orig_item, checked=False, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
@@ -287,7 +348,7 @@ class TemplateListItem(object):
             name_attr (str): Get this attribute of wrapped object as name
         """
         self.item = orig_item
-        self.state = False
+        self.state = checked
         self._nameattr = name_attr
         self._checkable = checkable
 
@@ -308,7 +369,7 @@ class TemplateListItem(object):
         """Name property."""
         # get custom attr, or name or just str repr
         if self._nameattr:
-            return str(getattr(self.item, self._nameattr))
+            return safe_strtype(getattr(self.item, self._nameattr))
         elif hasattr(self.item, 'name'):
             return getattr(self.item, 'name', '')
         else:
@@ -398,7 +459,7 @@ class SelectFromList(TemplateUserInputWindow):
         name property to customize how the checkbox is named on the dialog.
 
         >>> from pyrevit import forms
-        >>> class MyOption(forms.TemplateListItem)
+        >>> class MyOption(forms.TemplateListItem):
         ...    @property
         ...    def name(self):
         ...        return '{} - {}{}'.format(self.item.SheetNumber,
@@ -491,7 +552,7 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _prepare_context(self):
         if isinstance(self._context, dict) and self._context.keys():
-            self._update_ctx_groups(self._context.keys())
+            self._update_ctx_groups(sorted(self._context.keys()))
             new_ctx = {}
             for ctx_grp, ctx_items in self._context.items():
                 new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
@@ -626,6 +687,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         switches (list[str]): list of on/off switches
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
+        recognize_access_key (bool): recognize '_' as mark of access key
 
     Returns:
         str: name of selected option
@@ -653,7 +715,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         ...     ops,
         ...     switches=switches
         ...     message='Select Option',
-        ...     config=cfgs
+        ...     config=cfgs,
+        ...     recognize_access_key=False
         ...     )
         >>> rops
         'option2'
@@ -677,6 +740,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         self.message_label.Content = \
             message if message else 'Pick a command option:'
+
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
 
         # creates the switches first
         for switch, state in self._switches.items():
@@ -817,7 +883,8 @@ class GetValueWindow(TemplateUserInputWindow):
             self.datePrompt.Text = \
                 value_prompt if value_prompt else 'Pick date:'
 
-    def string_value_changed(self, sender, args):
+    def string_value_changed(self, sender, args): #pylint: disable=unused-argument
+        """Handle string vlaue update event."""
         filtered_rvalues = \
             sorted([x for x in self.reserved_values
                     if self.stringValue_tb.Text in str(x)],
@@ -833,6 +900,7 @@ class GetValueWindow(TemplateUserInputWindow):
             self.okayButton.IsEnabled = True
 
     def select(self, sender, args):    #pylint: disable=W0613
+        """Process input data and set the response."""
         self.Close()
         if self.value_type == 'string':
             self.response = self.stringValue_tb.Text
@@ -862,7 +930,7 @@ class TemplatePromptBar(WPFWindow):
     def __init__(self, height=32, **kwargs):
         """Initialize user prompt window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source))
+                           op.join(XAML_FILES_DIR, self.xaml_source))
 
         self.user_height = height
         self.update_window()
@@ -874,7 +942,7 @@ class TemplatePromptBar(WPFWindow):
         scale_factor = 1.0 / HOST_APP.proc_screen_scalefactor
         top = left = width = height = 0
 
-        window_rect = revit.get_window_rectangle()
+        window_rect = revit.ui.get_window_rectangle()
 
         # set width and height
         width = window_rect.Right - window_rect.Left
@@ -909,11 +977,19 @@ class TemplatePromptBar(WPFWindow):
         """Private method to be overriden by subclasses for prompt setup."""
         pass
 
+    def _prepare(self):
+        pass
+
+    def _cleanup(self):
+        pass
+
     def __enter__(self):
+        self._prepare()
         self.Show()
         return self
 
     def __exit__(self, exception, exception_value, traceback):
+        self._cleanup()
         self.Close()
 
 
@@ -997,6 +1073,29 @@ class ProgressBar(TemplatePromptBar):
 
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
         self._title = kwargs.get('title', '{value}/{max_value}')
+        self._hostwnd = None
+        self._host_task_pbar = None
+
+    def _prepare(self):
+        self._hostwnd = revit.ui.get_mainwindow()
+        if self._hostwnd:
+            self._host_task_pbar = System.Windows.Shell.TaskbarItemInfo()
+            self._hostwnd.TaskbarItemInfo = self._host_task_pbar
+
+    def _cleanup(self):
+        if self._hostwnd:
+            self._hostwnd.TaskbarItemInfo = None
+
+    def _update_task_pbar(self):
+        if self._host_task_pbar is not None:
+            if self.indeterminate:
+                self._host_task_pbar.ProgressState = \
+                    System.Windows.Shell.TaskbarItemProgressState.Indeterminate
+            else:
+                self._host_task_pbar.ProgressState = \
+                    System.Windows.Shell.TaskbarItemProgressState.Normal
+                self._host_task_pbar.ProgressValue = \
+                    (self.new_value / float(self.max_value))
 
     def _update_pbar(self):
         self.update_window()
@@ -1021,15 +1120,19 @@ class ProgressBar(TemplatePromptBar):
         # ask WPF dispatcher for gui update
         self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
                                     Threading.DispatcherPriority.Background)
+        # ask WPF dispatcher for gui update
+        self.pbar.Dispatcher.Invoke(System.Action(self._update_task_pbar),
+                                    Threading.DispatcherPriority.Background)
         # give it a little free time to update ui
         self.pbar.Dispatcher.Invoke(System.Action(self._donothing),
                                     Threading.DispatcherPriority.Background)
 
     @staticmethod
     def _make_return_getter(f, ret):
-        # WIP
+        # FIXME: WIP, cleanup docs
         @wraps(f)
         def wrapped_f(*args, **kwargs):
+            """Whatever this is"""
             ret.append(f(*args, **kwargs))
         return wrapped_f
 
@@ -1123,7 +1226,7 @@ class SearchPrompt(WPFWindow):
     def __init__(self, search_db, width, height, **kwargs):
         """Initialize search prompt window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), 'SearchPrompt.xaml'))
+                           op.join(XAML_FILES_DIR, 'SearchPrompt.xaml'))
         self.Width = width
         self.MinWidth = self.Width
         self.Height = height
@@ -1131,6 +1234,7 @@ class SearchPrompt(WPFWindow):
         self.search_tip = kwargs.get('search_tip', '')
 
         self._search_db = sorted(search_db)
+        self._search_res = None
         self._switches = kwargs.get('switches', [])
         self._setup_response()
 
@@ -1252,11 +1356,8 @@ class SearchPrompt(WPFWindow):
                     self.wordsmatch_tb.Text = '- {}'.format(cur_res)
                     mlogger.debug('wordsmatch_tb.Text: %s',
                                   self.wordsmatch_tb.Text)
-
-            self._setup_response(response=cur_res)
+            self._search_res = cur_res
             return True
-
-        self._setup_response()
         return False
 
     def set_search_results(self, *args):
@@ -1316,6 +1417,7 @@ class SearchPrompt(WPFWindow):
             self.Close()
         # Enter: close, returns matched response automatically
         elif args.Key == Input.Key.Enter:
+            self._setup_response(response=self._search_res)
             self.Close()
         # Shift+Tab, Tab: Cycle through matches
         elif args.Key == Input.Key.Tab and shiftdown:
@@ -1393,6 +1495,35 @@ class ViewOption(TemplateListItem):
                                 self.item.ViewType)
 
 
+class LevelOption(TemplateListItem):
+    """Level wrapper for :func:`select_levels`."""
+    def __init__(self, level_element):
+        super(LevelOption, self).__init__(level_element)
+
+    @property
+    def name(self):
+        """Level name."""
+        return revit.query.get_name(self.item)
+
+
+class FamilyParamOption(TemplateListItem):
+    """Level wrapper for :func:`select_family_parameters`."""
+    def __init__(self, fparam, builtin=False, labeled=False):
+        super(FamilyParamOption, self).__init__(fparam)
+        self.isbuiltin = builtin
+        self.islabeled = labeled
+
+    @property
+    def name(self):
+        """Family Parameter name."""
+        return self.item.Definition.Name
+
+    @property
+    def istype(self):
+        """Is type parameter."""
+        return not self.item.IsInstance
+
+
 def select_revisions(title='Select Revision',
                      button_name='Select',
                      width=DEFAULT_INPUTWINDOW_WIDTH,
@@ -1446,7 +1577,9 @@ def select_sheets(title='Select Sheets',
                   width=DEFAULT_INPUTWINDOW_WIDTH,
                   multiple=True,
                   filterfunc=None,
-                  doc=None):
+                  doc=None,
+                  include_placeholder=True,
+                  use_selection=False):
     """Standard form for selecting sheets.
 
     Sheets are grouped into sheet sets and sheet set can be selected from
@@ -1462,7 +1595,8 @@ def select_sheets(title='Select Sheets',
             filter function to be applied to context items.
         doc (DB.Document, optional):
             source document for sheets; defaults to active document
-
+        use_selection (bool, optional):
+            ask if user wants to use currently selected sheets.
     Returns:
         list[DB.ViewSheet]: list of selected sheets
 
@@ -1473,6 +1607,20 @@ def select_sheets(title='Select Sheets',
         ...  <Autodesk.Revit.DB.ViewSheet object>]
     """
     doc = doc or HOST_APP.doc
+
+    if use_selection:
+        current_selected_sheets = []
+        current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
+        if current_selected_sheets \
+                and ask_to_use_selected("sheets"):
+            if filterfunc:
+                current_selected_sheets = \
+                    filter(filterfunc, current_selected_sheets)
+            if not include_placeholder:
+                current_selected_sheets = \
+                    [x for x in current_selected_sheets if not x.IsPlaceholder]
+            return current_selected_sheets
+
     all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
@@ -1481,6 +1629,9 @@ def select_sheets(title='Select Sheets',
 
     if filterfunc:
         all_sheets = filter(filterfunc, all_sheets)
+
+    if not include_placeholder:
+        all_sheets = [x for x in all_sheets if not x.IsPlaceholder]
 
     all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
                             key=lambda x: x.number)
@@ -1504,7 +1655,8 @@ def select_sheets(title='Select Sheets',
         button_name=button_name,
         width=width,
         multiselect=multiple,
-        checked_only=True
+        checked_only=True,
+        default_group='All Sheets'
         )
 
     return selected_sheets
@@ -1515,7 +1667,8 @@ def select_views(title='Select Views',
                  width=DEFAULT_INPUTWINDOW_WIDTH,
                  multiple=True,
                  filterfunc=None,
-                 doc=None):
+                 doc=None,
+                 use_selection=False):
     """Standard form for selecting views.
 
     Args:
@@ -1528,7 +1681,8 @@ def select_views(title='Select Views',
             filter function to be applied to context items.
         doc (DB.Document, optional):
             source document for views; defaults to active document
-
+        use_selection (bool, optional):
+            ask if user wants to use currently selected views.
     Returns:
         list[DB.View]: list of selected views
 
@@ -1539,6 +1693,17 @@ def select_views(title='Select Views',
         ...  <Autodesk.Revit.DB.View object>]
     """
     doc = doc or HOST_APP.doc
+
+    if use_selection:
+        current_selected_views = []
+        current_selected_views = revit.get_selection().include(DB.View)
+        if current_selected_views \
+                and ask_to_use_selected("views"):
+            if filterfunc:
+                current_selected_views = \
+                    filter(filterfunc, current_selected_views)
+            return current_selected_views
+
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1555,6 +1720,67 @@ def select_views(title='Select Views',
         )
 
     return selected_views
+
+
+def select_levels(title='Select Levels',
+                  button_name='Select',
+                  width=DEFAULT_INPUTWINDOW_WIDTH,
+                  multiple=True,
+                  filterfunc=None,
+                  doc=None,
+                  use_selection=False):
+    """Standard form for selecting levels.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for levels; defaults to active document
+        use_selection (bool, optional):
+            ask if user wants to use currently selected levels.
+    Returns:
+        list[DB.Level]: list of selected levels
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_levels()
+        ... [<Autodesk.Revit.DB.Level object>,
+        ...  <Autodesk.Revit.DB.Level object>]
+    """
+    doc = doc or HOST_APP.doc
+
+    if use_selection:
+        current_selected_levels = []
+        current_selected_levels = revit.get_selection().include(DB.Level)
+        if current_selected_levels \
+                and ask_to_use_selected("levels"):
+            if filterfunc:
+                current_selected_levels = \
+                    filter(filterfunc, current_selected_levels)
+            return current_selected_levels
+
+    all_levels = \
+        revit.query.get_elements_by_category([DB.BuiltInCategory.OST_Levels],
+                                             doc=doc)
+
+    if filterfunc:
+        all_levels = filter(filterfunc, all_levels)
+
+    selected_levels = SelectFromList.show(
+        sorted([LevelOption(x) for x in all_levels],
+               key=lambda x: x.Elevation),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True,
+        )
+    return selected_levels
 
 
 def select_viewtemplates(title='Select View Templates',
@@ -1602,6 +1828,54 @@ def select_viewtemplates(title='Select View Templates',
         )
 
     return selected_viewtemplates
+
+
+def select_schedules(title='Select Schedules',
+                     button_name='Select',
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     multiple=True,
+                     filterfunc=None,
+                     doc=None):
+    """Standard form for selecting schedules.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+
+    Returns:
+        list[DB.ViewSchedule]: list of selected schedules
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_schedules()
+        ... [<Autodesk.Revit.DB.ViewSchedule object>,
+        ...  <Autodesk.Revit.DB.ViewSchedule object>]
+    """
+    doc = doc or HOST_APP.doc
+    all_schedules = revit.query.get_all_schedules(doc=doc)
+
+    if filterfunc:
+        all_schedules = filter(filterfunc, all_schedules)
+
+    selected_schedules = \
+        SelectFromList.show(
+            sorted([ViewOption(x) for x in all_schedules],
+                   key=lambda x: x.name),
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True
+        )
+
+    return selected_schedules
 
 
 def select_open_docs(title='Select Open Documents',
@@ -1716,10 +1990,9 @@ def select_swatch(title='Select Color Swatch', button_name='Select'):
         >>> forms.select_swatch(title="Select Text Color")
         ... <RGB #CD8800>
     """
-    itemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
-    itemplate = \
-        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "SwatchContainerStyle.xaml")
+        )
     swatch = SelectFromList.show(
         colors.COLORS.values(),
         title=title,
@@ -1751,15 +2024,13 @@ def select_image(images, title='Select Image', button_name='Select'):
                                 title="Select Variation")
         ... 'C:/path/to/image1.png'
     """
-    ptemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "ImageListPanelStyle.xaml")
-    ptemplate = \
-        wpf.LoadComponent(Controls.ItemsPanelTemplate(), ptemplate_xaml_file)
+    ptemplate = utils.load_itemspanel_template(
+        os.path.join(XAML_FILES_DIR, "ImageListPanelStyle.xaml")
+        )
 
-    itemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "ImageListContainerStyle.xaml")
-    itemplate = \
-        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "ImageListContainerStyle.xaml")
+        )
 
     bitmap_images = {}
     for imageobj in images:
@@ -1781,6 +2052,160 @@ def select_image(images, title='Select Image', button_name='Select'):
         )
 
     return bitmap_images.get(selected_image, None)
+
+
+def select_parameters(src_element,
+                      title='Select Parameters',
+                      button_name='Select',
+                      multiple=True,
+                      filterfunc=None,
+                      include_instance=True,
+                      include_type=True):
+    """Standard form for selecting parameters from given element.
+
+    Args:
+        src_element (DB.Element): source element
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        include_instance (bool, optional): list instance parameters
+        include_type (bool, optional): list type parameters
+
+    Returns:
+        list[:obj:`ParamDef`]: list of paramdef objects
+
+    Example:
+        >>> forms.select_parameter(
+        ...     src_element,
+        ...     title='Select Parameters',
+        ...     multiple=True,
+        ...     include_instance=True,
+        ...     include_type=True
+        ... )
+        ... [<ParamDef >, <ParamDef >]
+    """
+    param_defs = []
+    non_storage_type = coreutils.get_enum_none(DB.StorageType)
+    if include_instance:
+        # collect instance parameters
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=False)
+             for x in src_element.Parameters
+             if not x.IsReadOnly and x.StorageType != non_storage_type]
+        )
+
+    if include_type:
+        # collect type parameters
+        src_type = revit.query.get_type(src_element)
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=True)
+             for x in src_type.Parameters
+             if not x.IsReadOnly and x.StorageType != non_storage_type]
+        )
+
+    if filterfunc:
+        param_defs = filter(filterfunc, param_defs)
+
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
+        )
+    selected_params = SelectFromList.show(
+        param_defs,
+        title=title,
+        button_name=button_name,
+        width=450,
+        multiselect=multiple,
+        item_template=itemplate
+        )
+
+    return selected_params
+
+
+def select_family_parameters(family_doc,
+                             title='Select Parameters',
+                             button_name='Select',
+                             multiple=True,
+                             filterfunc=None,
+                             include_instance=True,
+                             include_type=True,
+                             include_builtin=True,
+                             include_labeled=True):
+    """Standard form for selecting parameters from given family document.
+
+    Args:
+        family_doc (DB.Document): source family document
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        include_instance (bool, optional): list instance parameters
+        include_type (bool, optional): list type parameters
+        include_builtin (bool, optional): list builtin parameters
+        include_labeled (bool, optional): list parameters used as labels
+
+    Returns:
+        list[:obj:`DB.FamilyParameter`]: list of family parameter objects
+
+    Example:
+        >>> forms.select_family_parameters(
+        ...     family_doc,
+        ...     title='Select Parameters',
+        ...     multiple=True,
+        ...     include_instance=True,
+        ...     include_type=True
+        ... )
+        ... [<DB.FamilyParameter >, <DB.FamilyParameter >]
+    """
+    family_doc = family_doc or HOST_APP.doc
+    family_params = revit.query.get_family_parameters(family_doc)
+    # get all params used in labeles
+    label_param_ids = \
+        [x.Id for x in revit.query.get_family_label_parameters(family_doc)]
+
+    if filterfunc:
+        family_params = filter(filterfunc, family_params)
+
+    param_defs = []
+    for family_param in family_params:
+        if not include_instance and family_param.IsInstance:
+            continue
+        if not include_type and not family_param.IsInstance:
+            continue
+        if not include_builtin and family_param.Id.IntegerValue < 0:
+            continue
+        if not include_labeled and family_param.Id in label_param_ids:
+            continue
+
+        param_defs.append(
+            FamilyParamOption(family_param,
+                              builtin=family_param.Id.IntegerValue < 0,
+                              labeled=family_param.Id in label_param_ids)
+            )
+
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
+        )
+    selected_params = SelectFromList.show(
+        {
+            'All Parameters': param_defs,
+            'Type Parameters': [x for x in param_defs if x.istype],
+            'Built-in Parameters': [x for x in param_defs if x.isbuiltin],
+            'Used as Label': [x for x in param_defs if x.islabeled],
+        },
+        title=title,
+        button_name=button_name,
+        group_selector_title='Parameter Filters:',
+        width=450,
+        multiselect=multiple,
+        item_template=itemplate
+        )
+
+    return selected_params
 
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
@@ -1812,6 +2237,9 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     if not title:
         title = cmd_name if cmd_name else 'pyRevit'
     tdlg = UI.TaskDialog(title)
+
+    # process input types
+    just_ok = ok and not any([cancel, yes, no, retry])
 
     options = options or []
     # add command links if any
@@ -1860,21 +2288,22 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
 
     # PROCESS REPONSES
     # positive response
+    mlogger.debug('alert result: %s', res)
     if res == UI.TaskDialogResult.Ok \
             or res == UI.TaskDialogResult.Yes \
             or res == UI.TaskDialogResult.Retry:
-        if not exitscript:
-            return True
-        else:
+        if just_ok and exitscript:
             sys.exit()
+        return True
     # negative response
     elif res == coreutils.get_enum_none(UI.TaskDialogResult) \
             or res == UI.TaskDialogResult.Cancel \
             or res == UI.TaskDialogResult.No:
-        if not exitscript:
-            return False
-        else:
+        if exitscript:
             sys.exit()
+        else:
+            return False
+
     # command link response
     elif 'CommandLink' in str(res):
         tdresults = sorted(
@@ -1883,11 +2312,10 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
             )
         residx = tdresults.index(res)
         return options[residx]
+    elif exitscript:
+        sys.exit()
     else:
-        if not exitscript:
-            return False
-        else:
-            sys.exit()
+        return False
 
 
 def alert_ifnot(condition, msg, *args, **kwargs):
@@ -1930,7 +2358,7 @@ def pick_folder(title=None):
         fb_dlg = CPDialogs.CommonOpenFileDialog()
         fb_dlg.IsFolderPicker = True
         if title:
-            fb_dlg.Description = title
+            fb_dlg.Title = title
         if fb_dlg.ShowDialog() == CPDialogs.CommonFileDialogResult.Ok:
             return fb_dlg.FileName
     else:
@@ -1939,7 +2367,6 @@ def pick_folder(title=None):
             fb_dlg.Description = title
         if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
             return fb_dlg.SelectedPath
-
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
@@ -2090,7 +2517,7 @@ def check_selection(exitscript=False,
 
 
 def check_familydoc(doc=None, family_cat=None, exitscript=False):
-    """Verify document is a Family and notify user of not.
+    """Verify document is a Family and notify user if not.
 
     Args:
         doc (DB.Document): target document, current of not provided
@@ -2118,6 +2545,77 @@ def check_familydoc(doc=None, family_cat=None, exitscript=False):
     alert('Active document must be a Family document{}.'
           .format(family_type_msg), exitscript=exitscript)
     return False
+
+
+def check_modeldoc(doc=None, exitscript=False):
+    """Verify document is a not a Model and notify user if not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if doc is a Model
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_modeldoc(doc=revit.doc)
+        ... True
+    """
+    doc = doc or HOST_APP.doc
+    if not doc.IsFamilyDocument:
+        return True
+
+    alert('Active document must be a Revit model (not a Family).',
+          exitscript=exitscript)
+    return False
+
+
+def check_modelview(view, exitscript=False):
+    """Verify target view is a model view.
+
+    Args:
+        view (DB.View): target view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is model view
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_modelview(view=revit.active_view)
+        ... True
+    """
+    if not isinstance(view, (DB.View3D, DB.ViewPlan, DB.ViewSection)):
+        alert("Active view must be a model view.", exitscript=exitscript)
+        return False
+    return True
+
+
+def check_viewtype(view, view_type, exitscript=False):
+    """Verify target view is of given type
+
+    Args:
+        view (DB.View): target view
+        view_type (DB.ViewType): type of view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is of given type
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_viewtype(revit.active_view, DB.ViewType.DrawingSheet)
+        ... True
+    """
+    if view.ViewType != view_type:
+        alert(
+            "Active view must be a {}.".format(
+                ' '.join(coreutils.split_words(str(view_type)))),
+            exitscript=exitscript
+            )
+        return False
+    return True
 
 
 def toast(message, title='pyRevit', appid='pyRevit',
@@ -2152,6 +2650,27 @@ def toast(message, title='pyRevit', appid='pyRevit',
 
 
 def ask_for_string(default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select a string value.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    string data types. kwargs can be used to pass on other arguments.
+
+    Args:
+        default (str): default unique string. must not be in reserved_values
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        str: selected string value
+
+    Example:
+        >>> forms.ask_for_string(
+        ...     default='some-tag',
+        ...     prompt='Enter new tag name:',
+        ...     title='Tag Manager')
+        ... 'new-tag'
+    """
     return GetValueWindow.show(
         None,
         value_type='string',
@@ -2164,6 +2683,33 @@ def ask_for_string(default=None, prompt=None, title=None, **kwargs):
 
 def ask_for_unique_string(reserved_values,
                           default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select a unique string value.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    unique string data types. kwargs can be used to pass on other arguments.
+
+    Args:
+        reserved_values (list[str]): list of reserved (forbidden) values
+        default (str): default unique string. must not be in reserved_values
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        str: selected unique string
+
+    Example:
+        >>> forms.ask_for_unique_string(
+        ...     prompt='Enter a Unique Name',
+        ...     title=self.Title,
+        ...     reserved_values=['Ehsan', 'Gui', 'Guido'],
+        ...     owner=self)
+        ... 'unique string'
+
+        In example above, owner argument is provided to be passed to underlying
+        :obj:`GetValueWindow`.
+
+    """
     return GetValueWindow.show(
         None,
         value_type='string',
@@ -2176,6 +2722,30 @@ def ask_for_unique_string(reserved_values,
 
 
 def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select an item from a list of items.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    'single-select' data types. kwargs can be used to pass on other arguments.
+
+    Args:
+        items (list[str]): list of items to choose from
+        default (str): default selected item
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        str: selected item
+
+    Example:
+        >>> forms.ask_for_one_item(
+        ...     ['test item 1', 'test item 2', 'test item 3'],
+        ...     default='test item 2',
+        ...     prompt='test prompt',
+        ...     title='test title'
+        ... )
+        ... 'test item 1'
+    """
     return GetValueWindow.show(
         items,
         value_type='dropdown',
@@ -2187,6 +2757,25 @@ def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
 
 
 def ask_for_date(default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select a date value.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    date data types. kwargs can be used to pass on other arguments.
+
+    Args:
+        default (datetime.datetime): default selected date value
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        datetime.datetime: selected date
+
+    Example:
+        >>> forms.ask_for_date(default="", title="Enter deadline:")
+        ... datetime.datetime(2019, 5, 17, 0, 0)
+    """
+    # FIXME: window does not set default value
     return GetValueWindow.show(
         None,
         value_type='date',
@@ -2197,5 +2786,21 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
+def ask_to_use_selected(type_name):
+    """Ask user if wants to use currently selected elements.
+
+    Args:
+        type_name (str): Element type of expected selected elements
+    """
+    return alert("You currently have %s selected. "
+                 "Do you want to use them?" % type_name.lower(),
+                 yes=True, no=True)
+
+
 def inform_wip():
+    """Show work-in-progress prompt to user and exit script.
+
+    Example:
+        >>> forms.inform_wip()
+    """
     alert("Work in progress.", exitscript=True)

@@ -216,8 +216,8 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         # list all sheets
         self._list_sheets()
-        if isinstance(revit.activeview, DB.ViewSheet):
-            self.search_tb.Text = revit.activeview.SheetNumber
+        if isinstance(revit.active_view, DB.ViewSheet):
+            self.search_tb.Text = revit.active_view.SheetNumber
 
     def _read_resources(self):
         dt_template_file = script.get_bundle_file('PackagesDataTemplate.xaml')
@@ -378,6 +378,7 @@ class ManagePackagesWindow(forms.WPFWindow):
             self.sheets_dg.CommitEdit()
             self.sheets_dg.Focus()
             self.sheets_dg.Items.Refresh()
+        args.Cancel = True
 
     def update_sheets(self, sender, args):
         self.Close()
@@ -386,5 +387,7 @@ class ManagePackagesWindow(forms.WPFWindow):
                 sheet_item.update_sheet_history()
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
 
 ManagePackagesWindow('ManagePackagesWindow.xaml').ShowDialog()

@@ -258,7 +258,7 @@ class ManageTagsWindow(forms.WPFWindow):
                             tagsmgr.create_tag_schedule(tag,
                                                         tag_cat,
                                                         tag_sched)
-                    revit.activeview = new_Sched
+                    revit.active_view = new_Sched
 
     def make_tag_3dview(self, sender, args):
         if self.selected_tags:
@@ -269,10 +269,13 @@ class ManageTagsWindow(forms.WPFWindow):
                     tag_view = \
                         tagsmgr.create_tag_3dview(self.selected_tags)
 
-                revit.activeview = tag_view
+                revit.active_view = tag_view
             except Exception as e:
                 forms.alert(getattr(e, 'msg', str(e)))
 
+
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
 
 if tagscfg.verify_tags_configs():
     ManageTagsWindow('ManageTagsWindow.xaml').ShowDialog()

@@ -86,7 +86,7 @@ em {
 }
 
 .rst-content dl:not(.docutils) dt .headerlink {
-    color: white;
+    color:  #23303d;
 }
 
 .wy-nav-side {
@@ -106,7 +106,7 @@ em {
     background: lightgrey;
 }
 
-.wy-menu-vertical .caption {
+.wy-menu-vertical p.caption {
     color: white;
 }
 
