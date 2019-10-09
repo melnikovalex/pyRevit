@@ -14,22 +14,32 @@ output = script.get_output()
 
 def toggle_element_selection_handles(target_view, bicat, state=True):
     """Toggle handles for spatial elements"""
+    print("toggle_element_selection_handles")
     with revit.Transaction("Toggle {} handles".format(str(bicat).lower())):
+        print("revit.Transaction(\"Toggle handles...")
         # if view has template, toggle temp VG overrides
-        if state:
+        if state and not target_view.IsTemporaryViewPropertiesModeEnabled():
+            print("EnableTemporaryViewPropertiesMode")
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
         try:
             # subcategories names (e.g. OST_MEPSpaceReferenceVisibility, reduce s)
             bicat_reference = DB.BuiltInCategory[str(bicat)[:-1] + "ReferenceVisibility"]
+            print("bicat_reference:{}".format(bicat_reference))
             rr_cat = revit.query.get_category(bicat_reference)
+            print("rr_cat:{}".format(rr_cat))
             rr_cat.Visible[target_view] = state
+            print("rr_cat.Visible[target_view] = state")
             bicat_interior = DB.BuiltInCategory[str(bicat)[:-1] + "InteriorFillVisibility"]
+            print("bicat_interior:{}".format(bicat_interior))
             rr_int = revit.query.get_category(bicat_interior) 
+            print("rr_int:{}".format(rr_int))
             rr_int.Visible[target_view] = state
+            print("rr_int.Visible[target_view] = state")
         except Exception as exc:
             logger.warn("Cannot set temporary view settings: {}".format(exc))
         # disable the temp VG overrides after making changes to categories
-        if not state:
+        if not state and target_view.IsTemporaryViewPropertiesModeEnabled():
+            print("DisableTemporaryViewMode")
             target_view.DisableTemporaryViewMode(
                 DB.TemporaryViewMode.TemporaryViewProperties)
 
@@ -79,15 +89,19 @@ def set_number(target_element, new_number):
         mark_param.Set(new_number)
 
 
-def mark_element_as_renumbered(target_view, room):
+def mark_element_as_renumbered(target_view, element):
     """Override element VG to transparent and halftone.
 
     Intended to mark processed renumbered elements visually.
     """
     ogs = DB.OverrideGraphicSettings()
+    print("ogs:{}".format(ogs))
     ogs.SetHalftone(True)
+    print("ogs.SetHalftone(100):{}".format(ogs))
     ogs.SetSurfaceTransparency(100)
-    target_view.SetElementOverrides(room.Id, ogs)
+    print("ogs.SetSurfaceTransparency(100):{}".format(ogs))
+    target_view.SetElementOverrides(element.Id, ogs)
+    print("SetElementOverrides")
 
 
 def unmark_renamed_elements(target_view, marked_element_ids):
@@ -138,8 +152,10 @@ def renumber_element(target_element, new_number, elements_dict):
     # renumber the given element
     logger.debug('applying %s', new_number)
     set_number(target_element, new_number)
+    print("set number done")
     elements_dict[new_number] = target_element.Id
     # mark the element visually to renumbered
+    print("mark_element_as_renumbered")
     mark_element_as_renumbered(revit.active_view, target_element)
 
 
@@ -176,10 +192,15 @@ def pick_and_renumber(bicat, starting_index):
                 # need nested transactions to push revit to update view
                 # on each renumber task
                 print(picked_element)
-                with revit.Transaction("Renumber {}".format(category_name)):
+                print("before renumber transaction")
+                with revit.Transaction("Renumber {}".format(category_name),
+                                       swallow_errors=True):
+                    print("in renumber transaction")
                     # actual renumber task
+                    print("before renumber_element")
                     renumber_element(picked_element,
                                      index, existing_elements_data)
+                    print("after renumber_element")
                     # record the renumbered element
                     renumbered_element_ids.append(picked_element.Id)
                 index = coreutils.increment_str(index)
