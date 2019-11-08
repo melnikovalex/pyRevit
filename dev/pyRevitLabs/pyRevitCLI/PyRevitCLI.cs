@@ -29,7 +29,7 @@ using Console = Colorful.Console;
 
 
 namespace pyRevitCLI {
-
+4
     internal enum PyRevitCLILogLevel {
         Quiet,
         InfoMessages,
@@ -411,7 +411,6 @@ namespace pyRevitCLI {
                     );
 
                 else if (all("sources")) {
-                    Console.WriteLine("dfsdfsd");
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
 
