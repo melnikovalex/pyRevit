@@ -1684,14 +1684,14 @@ def select_sheets(title='Select Sheets',
     if use_selection:
         current_selected_sheets = []
         current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
+        if filterfunc:
+            current_selected_sheets = \
+                filter(filterfunc, current_selected_sheets)
+        if not include_placeholder:
+            current_selected_sheets = \
+                [x for x in current_selected_sheets if not x.IsPlaceholder]
         if current_selected_sheets \
                 and ask_to_use_selected("sheets"):
-            if filterfunc:
-                current_selected_sheets = \
-                    filter(filterfunc, current_selected_sheets)
-            if not include_placeholder:
-                current_selected_sheets = \
-                    [x for x in current_selected_sheets if not x.IsPlaceholder]
             return current_selected_sheets
 
     all_ops = {}
