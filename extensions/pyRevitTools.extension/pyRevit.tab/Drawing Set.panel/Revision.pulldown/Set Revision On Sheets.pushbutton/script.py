@@ -1,18 +1,20 @@
 """Set selected revisions on selected sheets."""
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 
 
 __doc__ = 'Select a revision from the list of revisions and '\
           'this script set that revision on all sheets in the '\
-          'model as an additional revision.'
+          'model as an additional revision.'\
+          '\n\nShift-Click:\nAllow to change Issued Revisions'
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiple=True)
-                                   #filterfunc=lambda rev: not rev.Issued)
-    
+                                   multiple=True,
+                                   filterfunc=lambda rev: not rev.Issued \
+                                        or EXEC_PARAMS.config_mode)
+
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision',
                                  include_placeholder=False,
@@ -25,8 +27,4 @@ if revisions:
             print('SELECTED REVISION ADDED TO THESE SHEETS:')
             print('-' * 100)
             for s in updated_sheets:
-                snum = s.Parameter[DB.BuiltInParameter.SHEET_NUMBER]\
-                        .AsString().rjust(10)
-                sname = s.Parameter[DB.BuiltInParameter.SHEET_NAME]\
-                         .AsString().ljust(50)
-                print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
+                revit.report.print_sheet(s)

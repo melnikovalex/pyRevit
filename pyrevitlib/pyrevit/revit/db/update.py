@@ -5,7 +5,9 @@ from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
+from pyrevit.coreutils import logger
 
+mlogger = logger.get_logger(__name__)
 
 def set_name(element, new_name):
     # grab viewname correctly
@@ -30,17 +32,26 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
         for sheet in sheets or query.get_sheets(doc=doc):
             addrevs = set([x.IntegerValue
                            for x in sheet.GetAdditionalRevisionIds()])
+
             for rev in revisions:
-                # skip issued revisions
-                if not rev.Issued:
-                    if state:
-                        addrevs.add(rev.Id.IntegerValue)
-                    elif rev.Id.IntegerValue in addrevs:
-                        addrevs.remove(rev.Id.IntegerValue)
+                if state:
+                    addrevs.add(rev.Id.IntegerValue)
+                elif rev.Id.IntegerValue in addrevs:
+                    addrevs.remove(rev.Id.IntegerValue)
 
             rev_elids = [DB.ElementId(x) for x in addrevs]
             sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
-            updated_sheets.append(sheet)
+            # check if revisions were changed
+            rev_all = set([x.IntegerValue for x in sheet.GetAllRevisionIds()])
+            revisions_changed = False
+            for rev in revisions:
+                if (rev.Id.IntegerValue in rev_all) == state:
+                    revisions_changed = True
+                else:
+                    mlogger.warn("Cannot change revision '%s'on sheet '%s'",
+                                 query.get_name(rev), query.get_name(sheet))
+            if revisions_changed:
+                updated_sheets.append(sheet)
 
     return updated_sheets
 

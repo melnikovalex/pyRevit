@@ -1,24 +1,28 @@
 """Remove selected revisions from selected sheets."""
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import script
 
 
 __doc__ = 'Select a revision from the list of revisions\n'\
           'and this script will remove that revision ' \
-          'from all sheets if it has not been "clouded" on the sheet.'
+          'from all sheets if it has not been "clouded" on the sheet.'\
+          '\n\nShift-Click:\nAllow to change Issued Revisions'
 
 logger = script.get_logger()
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiple=True)
+                                   multiple=True,
+                                   filterfunc=lambda rev: not rev.Issued \
+                                        or EXEC_PARAMS.config_mode)
 
 logger.debug(revisions)
 
 if revisions:
-    sheets = forms.select_sheets(button_name='Set Revision')
+    sheets = forms.select_sheets(button_name='Set Revision',
+                                 use_selection=True)
     if sheets:
         with revit.Transaction('Remove Revision from Sheets'):
             updated_sheets = revit.update.update_sheet_revisions(revisions,
