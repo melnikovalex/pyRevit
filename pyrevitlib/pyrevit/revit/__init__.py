@@ -124,7 +124,7 @@ class ErrorSwallower():
         >>> with ErrorSwallower() as swallower:
         >>>     for fam in families:
         >>>         revit.doc.EditFamily(fam)
-        >>>         if swallower.get_swallowed():
+        >>>         if swallower.get_swallowed_errors():
         >>>             logger.warn("Warnings swallowed")
     """
 
